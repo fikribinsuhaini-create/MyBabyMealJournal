@@ -48,11 +48,31 @@ async function jsonpRequest<T>(params: Record<string, string>) {
 async function postMutation(action: 'upsert' | 'delete' | 'seed', payload: Record<string, string>) {
   if (!scriptUrl) return;
 
-  await fetch(scriptUrl, {
-    method: 'POST',
-    mode: 'no-cors',
-    body: new URLSearchParams({ action, ...payload }),
+  const frameName = `babyFoodPost_${crypto.randomUUID().replace(/-/g, '')}`;
+  const iframe = document.createElement('iframe');
+  iframe.name = frameName;
+  iframe.style.display = 'none';
+  document.body.appendChild(iframe);
+
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = scriptUrl;
+  form.target = frameName;
+
+  const entries = { action, ...payload };
+  Object.entries(entries).forEach(([key, value]) => {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = key;
+    input.value = value;
+    form.appendChild(input);
   });
+
+  document.body.appendChild(form);
+  form.submit();
+  await wait(800);
+  form.remove();
+  iframe.remove();
 }
 
 export async function bootstrapAppsScript(): Promise<Partial<AppData> | null> {

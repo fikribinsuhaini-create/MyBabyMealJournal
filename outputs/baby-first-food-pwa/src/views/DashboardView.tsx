@@ -97,7 +97,7 @@ export function DashboardView({
           initialValues={profile ? { ...profile, birth_date: toDateInputValue(profile.birth_date) } : undefined}
           onClose={() => setEditProfile(false)}
           onSubmit={(values) => {
-            upsert('BabyProfile', { id: profile?.id ?? 'baby-1', baby_name: values.baby_name, birth_date: values.birth_date });
+            upsert('BabyProfile', { id: profile?.id ?? '', baby_name: values.baby_name, birth_date: values.birth_date });
             setEditProfile(false);
           }}
         />

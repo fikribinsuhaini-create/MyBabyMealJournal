@@ -106,6 +106,12 @@ export function useBabyFoodData() {
         setSyncMessage('');
         setSyncState('syncing');
         await upsertAppsScriptRow(sheet, savedRow as Record<string, string>);
+        const remote = await fetchAppsScriptData();
+        const remoteRows = (remote?.[sheet] ?? []) as RowFor<T>[];
+        const existsInRemote = remoteRows.some((item) => item.id === id);
+        if (!existsInRemote) {
+          throw new Error('Apps Script save tak sampai ke Google Sheet');
+        }
         setSyncState('synced');
       } catch {
         setSyncState('error');
@@ -134,6 +140,12 @@ export function useBabyFoodData() {
         setSyncMessage('');
         setSyncState('syncing');
         await deleteAppsScriptRow(sheet, id);
+        const remote = await fetchAppsScriptData();
+        const remoteRows = (remote?.[sheet] ?? []) as RowFor<T>[];
+        const existsInRemote = remoteRows.some((item) => item.id === id);
+        if (existsInRemote) {
+          throw new Error('Apps Script delete tak sampai ke Google Sheet');
+        }
         setSyncState('synced');
       } catch {
         setSyncState('error');

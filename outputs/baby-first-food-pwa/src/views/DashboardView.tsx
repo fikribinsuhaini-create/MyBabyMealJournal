@@ -25,7 +25,7 @@ export function DashboardView({
   const todayName = new Intl.DateTimeFormat('ms-MY', { weekday: 'long' }).format(new Date());
   const today = days.find((day) => todayName.toLowerCase().includes(day.toLowerCase())) ?? 'Jumaat';
   const schedule = data.FeedingSchedule.find((item) => item.day === today) ?? data.FeedingSchedule[0];
-  const reactionCount = data.MenuPlanner.filter((item) => item.reaction).length + data.FoodTracker.filter((item) => item.reaction).length;
+  const reactionCount = data.FoodTracker.filter((item) => item.reaction && item.reaction !== 'Belum Dinilai').length;
 
   const stats = useMemo(
     () => [

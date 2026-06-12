@@ -29,7 +29,7 @@ export function TrackerView({
   const [prefill, setPrefill] = useState<Partial<FoodTracker> | null>(null);
 
   const menuOptions = useMemo(
-    () => menuRows.filter((row) => row.menu).map((row) => ({ id: row.id, label: `${row.menu} - ${row.day} ${row.meal_time || ''}` })),
+    () => menuRows.filter((row) => row.menu).map((row) => ({ id: row.id, label: `${row.week} · ${row.menu}` })),
     [menuRows]
   );
   const selectedMenu = menuRows.find((row) => row.id === selectedMenuId) ?? menuRows[0];
@@ -86,9 +86,9 @@ export function TrackerView({
                 if (!source) return;
                 setPrefill({
                   food_name: source.menu,
-                  introduced_date: toDateInputValue(source.date) || todayIso(),
-                  status: source.reaction.includes('Ada Reaksi') ? 'Perlu Dipantau' : 'Selamat',
-                  reaction: source.reaction || 'Belum Dinilai',
+                  introduced_date: todayIso(),
+                  status: 'Selamat',
+                  reaction: 'Belum Dinilai',
                 });
                 setAdding(true);
               }}

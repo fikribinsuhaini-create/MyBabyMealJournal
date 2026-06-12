@@ -19,11 +19,7 @@ export type BabyProfile = {
 export type MenuPlanner = {
   id: string;
   week: string;
-  date: string;
-  day: string;
   menu: string;
-  reaction: Reaction;
-  meal_time: string;
 };
 
 export type FeedingSchedule = {

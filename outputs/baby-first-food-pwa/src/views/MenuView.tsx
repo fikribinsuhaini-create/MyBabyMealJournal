@@ -2,16 +2,8 @@ import { Edit3, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { FormModal } from '../components/FormModal';
 import { Card, EmptyState, IconButton, Pill, SearchInput, SectionTitle, WeekTabs } from '../components/Ui';
-import { mealTimes, reactions, weeks } from '../constants';
-import { formatDisplayDate, todayIso, toDateInputValue } from '../utils/date';
+import { weeks } from '../constants';
 import type { MenuPlanner } from '../types';
-
-function dayFromDate(dateValue: string) {
-  const parsed = new Date(dateValue);
-  if (Number.isNaN(parsed.getTime())) return '';
-
-  return new Intl.DateTimeFormat('ms-MY', { weekday: 'long' }).format(parsed);
-}
 
 export function MenuView({
   rows,
@@ -31,14 +23,10 @@ export function MenuView({
     const query = search.toLowerCase();
     return rows
       .filter((row) => row.week === activeWeek)
-      .filter((row) => [row.day, row.date, row.menu, row.reaction, row.meal_time].join(' ').toLowerCase().includes(query));
+      .filter((row) => [row.week, row.menu].join(' ').toLowerCase().includes(query));
   }, [activeWeek, rows, search]);
 
-  const activeRecord =
-    editing ??
-    (adding
-      ? ({ week: activeWeek, date: todayIso(), meal_time: mealTimes[0], reaction: 'Belum Dinilai' } as Partial<MenuPlanner>)
-      : null);
+  const activeRecord = editing ?? (adding ? ({ week: activeWeek } as Partial<MenuPlanner>) : null);
 
   return (
     <div className="space-y-4">
@@ -62,9 +50,7 @@ export function MenuView({
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
                 <div className="mb-2 flex flex-wrap gap-2">
-                  <Pill tone="sage">{row.day || dayFromDate(row.date) || 'Hari'}</Pill>
-                  <Pill tone="butter">{formatDisplayDate(row.date)}</Pill>
-                  <Pill tone="peach">{row.meal_time || 'Masa belum set'}</Pill>
+                  <Pill tone="sage">{row.week}</Pill>
                 </div>
                 <h3 className="text-lg font-bold">{row.menu}</h3>
               </div>
@@ -75,11 +61,6 @@ export function MenuView({
                 <IconButton label="Padam" onClick={() => remove(row.id)} tone="danger">
                   <Trash2 size={17} />
                 </IconButton>
-              </div>
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex flex-wrap gap-2 pt-1">
-                <Pill tone={row.reaction.includes('Ada Reaksi') ? 'berry' : row.reaction === 'Belum Dinilai' ? 'butter' : 'peach'}>{row.reaction}</Pill>
               </div>
             </div>
           </Card>
@@ -93,22 +74,15 @@ export function MenuView({
           title={editing ? 'Kemaskini Menu' : 'Tambah Menu'}
           fields={[
             { name: 'week', label: 'Minggu', type: 'select', options: weeks },
-            { name: 'date', label: 'Tarikh', type: 'date' },
-            { name: 'meal_time', label: 'Masa Makan', type: 'select', options: mealTimes },
-            { name: 'menu', label: 'Menu' },
-            { name: 'reaction', label: 'Reaksi Bayi', type: 'select', options: reactions },
+            { name: 'menu', label: 'Menu / Makanan' },
           ]}
-          initialValues={{ ...(activeRecord as Record<string, string>), date: toDateInputValue(activeRecord.date || '') }}
+          initialValues={activeRecord as Record<string, string>}
           onClose={() => {
             setEditing(null);
             setAdding(false);
           }}
           onSubmit={(values) => {
-            upsert({
-              id: editing?.id ?? '',
-              ...values,
-              day: dayFromDate(values.date),
-            } as MenuPlanner);
+            upsert({ id: editing?.id ?? '', ...values } as MenuPlanner);
             setEditing(null);
             setAdding(false);
           }}

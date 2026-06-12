@@ -42,7 +42,7 @@ export function MenuView({
       />
 
       <WeekTabs weeks={weeks} active={activeWeek} setActive={setActiveWeek} />
-      <SearchInput value={search} onChange={setSearch} placeholder="Cari menu, bahan, reaksi..." />
+      <SearchInput value={search} onChange={setSearch} placeholder="Cari menu..." />
 
       <div className="space-y-3">
         {filtered.map((row) => (

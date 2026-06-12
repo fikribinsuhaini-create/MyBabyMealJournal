@@ -24,15 +24,26 @@ async function resizeImage(file: File) {
     element.src = dataUrl;
   });
 
-  const maxSize = 760;
-  const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.round(image.width * scale);
-  canvas.height = Math.round(image.height * scale);
-  const context = canvas.getContext('2d');
-  if (!context) return dataUrl;
-  context.drawImage(image, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL('image/jpeg', 0.72);
+  const sizes = [512, 420, 320, 240];
+  const qualities = [0.72, 0.6, 0.5, 0.45];
+
+  for (let index = 0; index < sizes.length; index += 1) {
+    const maxSize = sizes[index];
+    const quality = qualities[index];
+    const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.width * scale));
+    canvas.height = Math.max(1, Math.round(image.height * scale));
+    const context = canvas.getContext('2d');
+    if (!context) return dataUrl;
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const compressed = canvas.toDataURL('image/jpeg', quality);
+    if (compressed.length <= 45000 || index === sizes.length - 1) {
+      return compressed;
+    }
+  }
+
+  return dataUrl;
 }
 
 export function FormModal({

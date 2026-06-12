@@ -92,6 +92,19 @@ export function useBabyFoodData() {
       const id = row.id || createId(sheet.toLowerCase());
       const savedRow = { ...row, id } as RowFor<T>;
       const rows = data[sheet] as RowFor<T>[];
+
+      const recipeRow = sheet === 'Recipes' ? (savedRow as RowFor<'Recipes'>) : null;
+
+      if (recipeRow && typeof recipeRow.image_url === 'string' && recipeRow.image_url.length > 45000) {
+        const nextRows = rows.some((item) => item.id === id)
+          ? rows.map((item) => (item.id === id ? savedRow : item))
+          : [savedRow, ...rows];
+        commit(replaceSheet(data, sheet, nextRows));
+        setSyncState('error');
+        setSyncMessage('Gambar resepi terlalu besar. Kecilkan gambar atau guna URL pendek.');
+        return;
+      }
+
       const exists = rows.some((item) => item.id === id);
       const nextRows = exists ? rows.map((item) => (item.id === id ? savedRow : item)) : [savedRow, ...rows];
       const next = replaceSheet(data, sheet, nextRows);

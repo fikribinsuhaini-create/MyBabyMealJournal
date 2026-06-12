@@ -9,6 +9,37 @@ function hasAnyRows(data: Partial<AppData>) {
   return Object.values(data).some((rows) => Array.isArray(rows) && rows.length > 0);
 }
 
+function mergeRemoteData(local: AppData, remote: Partial<AppData>) {
+  const next: AppData = { ...local };
+
+  (Object.keys(local) as SheetName[]).forEach((sheet) => {
+    const remoteRows = remote[sheet];
+    if (!Array.isArray(remoteRows) || remoteRows.length === 0) {
+      return;
+    }
+
+    switch (sheet) {
+      case 'BabyProfile':
+        next.BabyProfile = remoteRows as AppData['BabyProfile'];
+        break;
+      case 'MenuPlanner':
+        next.MenuPlanner = remoteRows as AppData['MenuPlanner'];
+        break;
+      case 'FeedingSchedule':
+        next.FeedingSchedule = remoteRows as AppData['FeedingSchedule'];
+        break;
+      case 'Recipes':
+        next.Recipes = remoteRows as AppData['Recipes'];
+        break;
+      case 'FoodTracker':
+        next.FoodTracker = remoteRows as AppData['FoodTracker'];
+        break;
+    }
+  });
+
+  return next;
+}
+
 export function useBabyFoodData() {
   const [data, setData] = useState<AppData>(() => loadLocalData());
   const [syncState, setSyncState] = useState<SyncState>('local');
@@ -36,7 +67,7 @@ export function useBabyFoodData() {
         remote = await fetchAppsScriptData();
       }
 
-      const next = { ...loadLocalData(), ...remote };
+      const next = mergeRemoteData(local, remote ?? {});
       setData(next);
       saveLocalData(next);
       setSyncState('synced');

@@ -1,0 +1,91 @@
+import type { AppData } from '../types';
+
+export const sampleData: AppData = {
+  BabyProfile: [
+    {
+      id: 'baby-1',
+      baby_name: 'Aisyah',
+      birth_date: '2025-12-12',
+    },
+  ],
+  MenuPlanner: [
+    {
+      id: 'menu-1',
+      week: 'Minggu 1',
+      date: '2026-06-12',
+      day: 'Jumaat',
+      menu: 'Puree labu manis',
+      ingredients: 'Labu manis, air masak',
+      cooking_method: 'Kukus labu hingga lembut, kisar halus, cairkan ikut tekstur bayi.',
+      reaction: '😊 Suka',
+      notes: 'Mulakan 2 sudu kecil.',
+      meal_time: 'Tengah Hari',
+    },
+    {
+      id: 'menu-2',
+      week: 'Minggu 1',
+      date: '2026-06-13',
+      day: 'Sabtu',
+      menu: 'Puree pisang',
+      ingredients: 'Pisang masak',
+      cooking_method: 'Lenyek pisang hingga halus. Tidak perlu masak.',
+      reaction: '😐 Biasa',
+      notes: 'Pantau najis selepas buah baru.',
+      meal_time: 'Sarapan',
+    },
+  ],
+  FeedingSchedule: [
+    {
+      id: 'schedule-1',
+      week: 'Minggu 1',
+      day: 'Jumaat',
+      breakfast: 'Susu',
+      lunch: 'Puree labu',
+      evening: 'Susu',
+      dinner: 'Bubur kosong cair',
+    },
+    {
+      id: 'schedule-2',
+      week: 'Minggu 1',
+      day: 'Sabtu',
+      breakfast: 'Puree pisang',
+      lunch: 'Susu',
+      evening: 'Air masak sedikit',
+      dinner: 'Susu',
+    },
+  ],
+  Recipes: [
+    {
+      id: 'recipe-1',
+      title: 'Puree Labu Manis',
+      image_url: 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&w=900&q=80',
+      age_category: '6 Bulan',
+      category: 'Sayur',
+      ingredients: '1 cawan labu manis, sedikit air masak',
+      instructions: 'Kupas dan potong labu. Kukus 12-15 minit. Kisar halus dan tapis jika perlu.',
+      notes: 'Tekstur boleh dicairkan dengan susu ibu atau air masak.',
+      source_link: '',
+    },
+    {
+      id: 'recipe-2',
+      title: 'Bubur Beras Lembut',
+      image_url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=900&q=80',
+      age_category: '6 Bulan',
+      category: 'Bubur',
+      ingredients: '2 sudu beras, 1 cawan air',
+      instructions: 'Masak beras hingga sangat lembut. Kisar atau lenyek ikut kesesuaian.',
+      notes: 'Baik untuk menu pertama yang neutral.',
+      source_link: '',
+    },
+  ],
+  FoodTracker: [
+    {
+      id: 'food-1',
+      food_name: 'Labu manis',
+      introduced_date: '2026-06-12',
+      status: 'Selamat',
+      reaction: '😊 Suka',
+      notes: 'Tiada ruam atau muntah selepas 24 jam.',
+    },
+  ],
+};

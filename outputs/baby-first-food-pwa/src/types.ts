@@ -19,6 +19,7 @@ export type BabyProfile = {
 export type MenuPlanner = {
   id: string;
   week: string;
+  day: string;
   menu: string;
 };
 

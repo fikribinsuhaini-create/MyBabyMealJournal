@@ -29,7 +29,7 @@ export function TrackerView({
   const [prefill, setPrefill] = useState<Partial<FoodTracker> | null>(null);
 
   const menuOptions = useMemo(
-    () => menuRows.filter((row) => row.menu).map((row) => ({ id: row.id, label: `${row.week} · ${row.menu}` })),
+    () => menuRows.filter((row) => row.menu).map((row) => ({ id: row.id, label: `${row.week} - ${row.day} - ${row.menu}` })),
     [menuRows]
   );
   const selectedMenu = menuRows.find((row) => row.id === selectedMenuId) ?? menuRows[0];

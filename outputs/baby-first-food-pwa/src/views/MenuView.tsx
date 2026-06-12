@@ -5,6 +5,8 @@ import { Card, EmptyState, IconButton, Pill, SearchInput, SectionTitle, WeekTabs
 import { weeks } from '../constants';
 import type { MenuPlanner } from '../types';
 
+const menuDays = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'];
+
 export function MenuView({
   rows,
   upsert,
@@ -23,10 +25,10 @@ export function MenuView({
     const query = search.toLowerCase();
     return rows
       .filter((row) => row.week === activeWeek)
-      .filter((row) => [row.week, row.menu].join(' ').toLowerCase().includes(query));
+      .filter((row) => [row.week, row.day, row.menu].join(' ').toLowerCase().includes(query));
   }, [activeWeek, rows, search]);
 
-  const activeRecord = editing ?? (adding ? ({ week: activeWeek } as Partial<MenuPlanner>) : null);
+  const activeRecord = editing ?? (adding ? ({ week: activeWeek, day: menuDays[0] } as Partial<MenuPlanner>) : null);
 
   return (
     <div className="space-y-4">
@@ -42,7 +44,7 @@ export function MenuView({
       />
 
       <WeekTabs weeks={weeks} active={activeWeek} setActive={setActiveWeek} />
-      <SearchInput value={search} onChange={setSearch} placeholder="Cari menu..." />
+      <SearchInput value={search} onChange={setSearch} placeholder="Cari Day 1, Bubur..." />
 
       <div className="space-y-3">
         {filtered.map((row) => (
@@ -51,6 +53,7 @@ export function MenuView({
               <div>
                 <div className="mb-2 flex flex-wrap gap-2">
                   <Pill tone="sage">{row.week}</Pill>
+                  <Pill tone="butter">{row.day}</Pill>
                 </div>
                 <h3 className="text-lg font-bold">{row.menu}</h3>
               </div>
@@ -74,6 +77,7 @@ export function MenuView({
           title={editing ? 'Kemaskini Menu' : 'Tambah Menu'}
           fields={[
             { name: 'week', label: 'Minggu', type: 'select', options: weeks },
+            { name: 'day', label: 'Hari', type: 'select', options: menuDays },
             { name: 'menu', label: 'Menu / Makanan' },
           ]}
           initialValues={activeRecord as Record<string, string>}

@@ -22,10 +22,7 @@ export type MenuPlanner = {
   date: string;
   day: string;
   menu: string;
-  ingredients: string;
-  cooking_method: string;
   reaction: Reaction;
-  notes: string;
   meal_time: string;
 };
 

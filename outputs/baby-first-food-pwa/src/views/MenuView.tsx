@@ -2,9 +2,16 @@ import { Edit3, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { FormModal } from '../components/FormModal';
 import { Card, EmptyState, IconButton, Pill, SearchInput, SectionTitle, WeekTabs } from '../components/Ui';
-import { days, mealTimes, reactions, weeks } from '../constants';
+import { mealTimes, reactions, weeks } from '../constants';
 import { formatDisplayDate, todayIso, toDateInputValue } from '../utils/date';
 import type { MenuPlanner } from '../types';
+
+function dayFromDate(dateValue: string) {
+  const parsed = new Date(dateValue);
+  if (Number.isNaN(parsed.getTime())) return '';
+
+  return new Intl.DateTimeFormat('ms-MY', { weekday: 'long' }).format(parsed);
+}
 
 export function MenuView({
   rows,
@@ -24,13 +31,13 @@ export function MenuView({
     const query = search.toLowerCase();
     return rows
       .filter((row) => row.week === activeWeek)
-      .filter((row) => [row.day, row.menu, row.ingredients, row.reaction, row.notes].join(' ').toLowerCase().includes(query));
+      .filter((row) => [row.day, row.date, row.menu, row.reaction, row.meal_time].join(' ').toLowerCase().includes(query));
   }, [activeWeek, rows, search]);
 
   const activeRecord =
     editing ??
     (adding
-      ? ({ week: activeWeek, date: todayIso(), day: days[0], meal_time: mealTimes[0], reaction: 'Belum Dinilai' } as Partial<MenuPlanner>)
+      ? ({ week: activeWeek, date: todayIso(), meal_time: mealTimes[0], reaction: 'Belum Dinilai' } as Partial<MenuPlanner>)
       : null);
 
   return (
@@ -55,7 +62,7 @@ export function MenuView({
             <div className="mb-3 flex items-start justify-between gap-3">
               <div>
                 <div className="mb-2 flex flex-wrap gap-2">
-                  <Pill tone="sage">{row.day}</Pill>
+                  <Pill tone="sage">{row.day || dayFromDate(row.date) || 'Hari'}</Pill>
                   <Pill tone="butter">{formatDisplayDate(row.date)}</Pill>
                   <Pill tone="peach">{row.meal_time || 'Masa belum set'}</Pill>
                 </div>
@@ -71,17 +78,8 @@ export function MenuView({
               </div>
             </div>
             <div className="space-y-2 text-sm">
-              <p>
-                <span className="font-semibold text-cocoa/70">Bahan: </span>
-                {row.ingredients}
-              </p>
-              <p>
-                <span className="font-semibold text-cocoa/70">Cara masak: </span>
-                {row.cooking_method}
-              </p>
               <div className="flex flex-wrap gap-2 pt-1">
                 <Pill tone={row.reaction.includes('Ada Reaksi') ? 'berry' : row.reaction === 'Belum Dinilai' ? 'butter' : 'peach'}>{row.reaction}</Pill>
-                {row.notes ? <Pill tone="sage">{row.notes}</Pill> : null}
               </div>
             </div>
           </Card>
@@ -96,13 +94,9 @@ export function MenuView({
           fields={[
             { name: 'week', label: 'Minggu', type: 'select', options: weeks },
             { name: 'date', label: 'Tarikh', type: 'date' },
-            { name: 'day', label: 'Hari', type: 'select', options: days },
             { name: 'meal_time', label: 'Masa Makan', type: 'select', options: mealTimes },
             { name: 'menu', label: 'Menu' },
-            { name: 'ingredients', label: 'Bahan', type: 'textarea' },
-            { name: 'cooking_method', label: 'Cara Masak', type: 'textarea' },
             { name: 'reaction', label: 'Reaksi Bayi', type: 'select', options: reactions },
-            { name: 'notes', label: 'Nota', type: 'textarea' },
           ]}
           initialValues={{ ...(activeRecord as Record<string, string>), date: toDateInputValue(activeRecord.date || '') }}
           onClose={() => {
@@ -110,7 +104,11 @@ export function MenuView({
             setAdding(false);
           }}
           onSubmit={(values) => {
-            upsert({ id: editing?.id ?? '', ...values } as MenuPlanner);
+            upsert({
+              id: editing?.id ?? '',
+              ...values,
+              day: dayFromDate(values.date),
+            } as MenuPlanner);
             setEditing(null);
             setAdding(false);
           }}

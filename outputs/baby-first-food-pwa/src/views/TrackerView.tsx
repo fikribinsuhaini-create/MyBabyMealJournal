@@ -89,7 +89,6 @@ export function TrackerView({
                   introduced_date: toDateInputValue(source.date) || todayIso(),
                   status: source.reaction.includes('Ada Reaksi') ? 'Perlu Dipantau' : 'Selamat',
                   reaction: source.reaction || 'Belum Dinilai',
-                  notes: [source.meal_time, source.notes].filter(Boolean).join(' - '),
                 });
                 setAdding(true);
               }}

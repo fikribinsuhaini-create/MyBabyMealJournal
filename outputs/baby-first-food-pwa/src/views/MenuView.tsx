@@ -1,7 +1,7 @@
 import { Edit3, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { FormModal } from '../components/FormModal';
-import { Card, EmptyState, IconButton, Pill, SearchInput, SectionTitle, WeekTabs } from '../components/Ui';
+import { Card, EmptyState, IconButton, Pill, SearchInput, SectionTitle } from '../components/Ui';
 import { ageCategories, weeks } from '../constants';
 import type { MenuPlanner } from '../types';
 
@@ -28,7 +28,7 @@ export function MenuView({
   upsert: (row: MenuPlanner) => Promise<void>;
   remove: (id: string) => Promise<void>;
 }) {
-  const [activeWeek, setActiveWeek] = useState(weeks[0]);
+  const [activeAge, setActiveAge] = useState(ageCategories[0]);
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState<MenuPlanner | null>(null);
   const [adding, setAdding] = useState(false);
@@ -36,64 +36,98 @@ export function MenuView({
   const filtered = useMemo(() => {
     const query = search.toLowerCase();
     return rows
-      .filter((row) => row.week === activeWeek)
+      .filter((row) => row.age_category === activeAge)
       .filter((row) => [row.week, row.age_category, row.day, row.menu].join(' ').toLowerCase().includes(query))
-      .sort((left, right) => getDayNumber(left.day) - getDayNumber(right.day));
-  }, [activeWeek, rows, search]);
+      .sort((left, right) => {
+        const weekCompare = weeks.indexOf(left.week) - weeks.indexOf(right.week);
+        if (weekCompare !== 0) return weekCompare;
+        return getDayNumber(left.day) - getDayNumber(right.day);
+      });
+  }, [activeAge, rows, search]);
 
-  const activeRecord = editing ?? (adding ? ({ week: activeWeek, age_category: ageCategories[0], day: menuDays[0] } as Partial<MenuPlanner>) : null);
+  const groupedByWeek = useMemo(
+    () =>
+      weeks
+        .map((week) => ({
+          week,
+          items: filtered.filter((row) => row.week === week),
+        }))
+        .filter((group) => group.items.length > 0),
+    [filtered]
+  );
+
+  const activeRecord = editing ?? (adding ? ({ week: weeks[0], age_category: activeAge, day: menuDays[0] } as Partial<MenuPlanner>) : null);
 
   return (
     <div className="space-y-4">
       <SectionTitle
         eyebrow="Menu Planner"
-        title="Rancang 4 minggu"
+        title="Rancang ikut umur"
         action={
           <button type="button" onClick={() => setAdding(true)} className="flex h-11 items-center gap-2 rounded-full bg-peach px-4 text-sm font-bold text-white shadow-soft">
             <Plus size={18} />
             Tambah
           </button>
         }
-      /> 
+      />
 
-      <WeekTabs weeks={weeks} active={activeWeek} setActive={setActiveWeek} />
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {ageCategories.map((ageCategory) => (
+          <button
+            key={ageCategory}
+            type="button"
+            onClick={() => setActiveAge(ageCategory)}
+            className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
+              activeAge === ageCategory ? 'bg-cocoa text-white shadow-soft' : 'bg-white text-cocoa/70'
+            }`}
+          >
+            {ageCategory}
+          </button>
+        ))}
+      </div>
+
       <SearchInput value={search} onChange={setSearch} placeholder="Cari Day 1, Bubur..." />
 
-      <div className="space-y-3">
-        {filtered.map((row) => (
-          <Card key={row.id} className={`border-l-4 ${row.age_category === '6 Bulan' ? 'border-l-peach' : row.age_category === '7 Bulan' || row.age_category === '8 Bulan' ? 'border-l-sage' : 'border-l-butter'}`}>
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="mb-3 flex flex-wrap gap-2">
-                  <Pill tone="sage">{row.week}</Pill>
-                  <Pill tone="butter">{row.day}</Pill>
-                  <Pill tone="peach">{row.age_category}</Pill>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="grid h-14 w-14 shrink-0 place-items-center rounded-[18px] bg-cream text-center">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-cocoa/50">Day</span>
-                    <span className="text-lg font-bold leading-none text-cocoa">{getDayNumber(row.day)}</span>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-cocoa/55">Menu</p>
-                    <h3 className="mt-1 break-words text-lg font-bold leading-tight">{row.menu}</h3>
-                  </div>
-                </div>
+      <div className="space-y-4">
+        {groupedByWeek.map(({ week, items }) => (
+          <Card key={week} className={`overflow-hidden border-l-4 ${ageTone(activeAge)}`}>
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <Pill tone="sage">{week}</Pill>
+                <h3 className="mt-2 text-lg font-bold">{activeAge}</h3>
               </div>
-              <div className="flex gap-2">
-                <IconButton label="Kemaskini" onClick={() => setEditing(row)}>
-                  <Edit3 size={17} />
-                </IconButton>
-                <IconButton label="Padam" onClick={() => remove(row.id)} tone="danger">
-                  <Trash2 size={17} />
-                </IconButton>
-              </div>
+              <p className="text-xs font-semibold text-cocoa/55">{items.length} menu</p>
+            </div>
+
+            <div className="space-y-2">
+              {items.map((row) => (
+                <div key={row.id} className="flex items-start gap-3 rounded-[20px] bg-cream px-3 py-3">
+                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[16px] bg-white text-center shadow-sm">
+                    <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-cocoa/45">Day</span>
+                    <span className="text-base font-bold leading-none text-cocoa">{getDayNumber(row.day)}</span>
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cocoa/50">{row.day}</p>
+                    <p className="mt-1 break-words text-base font-bold leading-tight text-cocoa">{row.menu}</p>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <IconButton label="Kemaskini" onClick={() => setEditing(row)}>
+                      <Edit3 size={17} />
+                    </IconButton>
+                    <IconButton label="Padam" onClick={() => remove(row.id)} tone="danger">
+                      <Trash2 size={17} />
+                    </IconButton>
+                  </div>
+                </div>
+              ))}
             </div>
           </Card>
         ))}
       </div>
 
-      {!filtered.length ? <EmptyState text="Tiada rekod menu untuk minggu ini." /> : null}
+      {!groupedByWeek.length ? <EmptyState text="Tiada rekod menu untuk umur ini." /> : null}
 
       {activeRecord ? (
         <FormModal

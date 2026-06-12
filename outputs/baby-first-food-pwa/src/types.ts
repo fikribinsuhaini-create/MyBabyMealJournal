@@ -26,6 +26,7 @@ export type MenuPlanner = {
 export type FeedingSchedule = {
   id: string;
   week: string;
+  date: string;
   day: string;
   breakfast: string;
   lunch: string;

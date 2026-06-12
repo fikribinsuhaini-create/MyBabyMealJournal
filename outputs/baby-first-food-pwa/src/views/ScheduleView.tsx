@@ -2,7 +2,8 @@ import { Edit3, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { FormModal } from '../components/FormModal';
 import { Card, EmptyState, IconButton, Pill, SectionTitle, WeekTabs } from '../components/Ui';
-import { days, weeks } from '../constants';
+import { weeks } from '../constants';
+import { formatDisplayDate, todayIso, toDateInputValue } from '../utils/date';
 import type { FeedingSchedule, MenuPlanner } from '../types';
 
 const meals = [
@@ -11,6 +12,13 @@ const meals = [
   ['Petang', 'evening'],
   ['Malam', 'dinner'],
 ] as const;
+
+function dayFromDate(dateValue: string) {
+  const parsed = new Date(dateValue);
+  if (Number.isNaN(parsed.getTime())) return '';
+
+  return new Intl.DateTimeFormat('ms-MY', { weekday: 'long' }).format(parsed);
+}
 
 export function ScheduleView({
   rows,
@@ -27,7 +35,7 @@ export function ScheduleView({
   const [editing, setEditing] = useState<FeedingSchedule | null>(null);
   const [adding, setAdding] = useState(false);
   const filtered = useMemo(() => rows.filter((row) => row.week === activeWeek), [activeWeek, rows]);
-  const activeRecord = editing ?? (adding ? ({ week: activeWeek, day: days[0] } as Partial<FeedingSchedule>) : null);
+  const activeRecord = editing ?? (adding ? ({ week: activeWeek, date: todayIso() } as Partial<FeedingSchedule>) : null);
   const menuOptions = useMemo(() => {
     const base = ['-'];
     const plannedMenus = menuRows.filter((row) => row.week === activeWeek).map((row) => row.menu).filter(Boolean);
@@ -56,7 +64,10 @@ export function ScheduleView({
         {filtered.map((row) => (
           <Card key={row.id}>
             <div className="mb-3 flex items-center justify-between">
-              <Pill tone="sage">{row.day}</Pill>
+              <div className="flex flex-wrap gap-2">
+                <Pill tone="sage">{row.day || dayFromDate(row.date) || 'Hari'}</Pill>
+                <Pill tone="butter">{formatDisplayDate(row.date)}</Pill>
+              </div>
               <div className="flex gap-2">
                 <IconButton label="Kemaskini" onClick={() => setEditing(row)}>
                   <Edit3 size={17} />
@@ -85,19 +96,23 @@ export function ScheduleView({
           title={editing ? 'Kemaskini Jadual' : 'Tambah Jadual'}
           fields={[
             { name: 'week', label: 'Minggu', type: 'select', options: weeks },
-            { name: 'day', label: 'Hari', type: 'select', options: days },
+            { name: 'date', label: 'Tarikh', type: 'date' },
             { name: 'breakfast', label: 'Sarapan', type: 'select', options: menuOptions },
             { name: 'lunch', label: 'Tengah Hari', type: 'select', options: menuOptions },
             { name: 'evening', label: 'Petang', type: 'select', options: menuOptions },
             { name: 'dinner', label: 'Malam', type: 'select', options: menuOptions },
           ]}
-          initialValues={activeRecord as Record<string, string>}
+          initialValues={{ ...(activeRecord as Record<string, string>), date: toDateInputValue(activeRecord.date || '') }}
           onClose={() => {
             setEditing(null);
             setAdding(false);
           }}
           onSubmit={(values) => {
-            upsert({ id: editing?.id ?? '', ...values } as FeedingSchedule);
+            upsert({
+              id: editing?.id ?? '',
+              ...values,
+              day: dayFromDate(values.date),
+            } as FeedingSchedule);
             setEditing(null);
             setAdding(false);
           }}

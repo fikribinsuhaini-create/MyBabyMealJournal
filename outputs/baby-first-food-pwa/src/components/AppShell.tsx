@@ -1,6 +1,8 @@
 import { Baby, BookOpen, CalendarDays, ClipboardList, Home, Utensils } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { SyncState } from '../types';
+import type { AppData } from '../types';
+import { calculateAge } from '../utils/date';
 
 export type TabKey = 'dashboard' | 'menu' | 'schedule' | 'recipes' | 'tracker';
 
@@ -25,14 +27,20 @@ export function AppShell({
   setActiveTab,
   syncState,
   syncMessage,
+  data,
   children,
 }: {
   activeTab: TabKey;
   setActiveTab: (tab: TabKey) => void;
   syncState: SyncState;
   syncMessage?: string;
+  data?: AppData;
   children: ReactNode;
 }) {
+  const babyName = data?.BabyProfile[0]?.baby_name?.trim();
+  const babyBirthDate = data?.BabyProfile[0]?.birth_date?.trim();
+  const babyAge = babyBirthDate ? calculateAge(babyBirthDate) : '';
+
   return (
     <div className="min-h-dvh bg-cream text-cocoa">
       <header className="sticky top-0 z-20 border-b border-white/70 bg-cream/90 px-5 pb-3 pt-[calc(env(safe-area-inset-top)+14px)] backdrop-blur">
@@ -43,7 +51,10 @@ export function AppShell({
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sageDeep">Baby First Food</p>
-              <h1 className="text-xl font-bold leading-tight">Planner Bayi</h1>
+              <h1 className="max-w-[16rem] break-words text-xl font-bold leading-tight">
+                {babyName || 'Planner Bayi'}
+                {babyAge ? <span className="font-semibold text-cocoa/70"> ({babyAge})</span> : null}
+              </h1>
             </div>
           </div>
           <div className="text-right">

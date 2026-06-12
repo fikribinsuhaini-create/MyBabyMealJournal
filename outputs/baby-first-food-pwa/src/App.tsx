@@ -13,7 +13,7 @@ export default function App() {
   const { data, syncState, syncMessage, upsert, remove } = useBabyFoodData();
 
   return (
-    <AppShell activeTab={activeTab} setActiveTab={setActiveTab} syncState={syncState} syncMessage={syncMessage}>
+    <AppShell activeTab={activeTab} setActiveTab={setActiveTab} syncState={syncState} syncMessage={syncMessage} data={data}>
       {activeTab === 'dashboard' ? <DashboardView data={data} upsert={(sheet, row: BabyProfile) => upsert(sheet, row)} /> : null}
       {activeTab === 'menu' ? <MenuView rows={data.MenuPlanner} upsert={(row: MenuPlanner) => upsert('MenuPlanner', row)} remove={(id) => remove('MenuPlanner', id)} /> : null}
       {activeTab === 'schedule' ? (

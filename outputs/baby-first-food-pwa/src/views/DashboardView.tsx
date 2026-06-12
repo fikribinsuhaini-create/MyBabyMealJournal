@@ -91,7 +91,7 @@ export function DashboardView({
         <FormModal
           title="Profil Bayi"
           fields={[
-            { name: 'baby_name', label: 'Nama bayi', placeholder: 'Contoh: Aisyah' },
+            { name: 'baby_name', label: 'Nama bayi', placeholder: 'Nama bayi' },
             { name: 'birth_date', label: 'Tarikh lahir', type: 'date' },
           ]}
           initialValues={profile ? { ...profile, birth_date: toDateInputValue(profile.birth_date) } : undefined}

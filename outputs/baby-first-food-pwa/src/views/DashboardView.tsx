@@ -2,7 +2,6 @@ import { Edit3, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { FormModal } from '../components/FormModal';
 import { Card, Pill } from '../components/Ui';
-import { days } from '../constants';
 import { calculateAge, formatDisplayDate, toDateInputValue, todayIso } from '../utils/date';
 import type { AppData, BabyProfile } from '../types';
 
@@ -22,10 +21,8 @@ export function DashboardView({
 }) {
   const [editProfile, setEditProfile] = useState(false);
   const profile = data.BabyProfile[0];
-  const todayName = new Intl.DateTimeFormat('ms-MY', { weekday: 'long' }).format(new Date());
-  const today = days.find((day) => todayName.toLowerCase().includes(day.toLowerCase())) ?? 'Jumaat';
   const todayDate = formatDisplayDate(todayIso());
-  const schedule = data.FeedingSchedule.find((item) => item.day === today) ?? data.FeedingSchedule[0];
+  const schedule = data.FeedingSchedule.find((item) => item.date === todayIso()) ?? null;
   const reactionCount = data.FoodTracker.filter((item) => item.reaction && item.reaction !== 'Belum Dinilai').length;
 
   const stats = useMemo(
@@ -41,9 +38,9 @@ export function DashboardView({
     <div className="space-y-5">
       <Card className="bg-peach/35 p-4 text-cocoa">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+          <div className="min-w-0 max-w-[72%]">
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-cocoa/65">Profil Bayi</p>
-            <h3 className="mt-1 truncate text-[26px] font-bold leading-tight">{profile?.baby_name || 'Nama bayi'}</h3>
+            <h3 className="mt-1 text-[22px] font-bold leading-tight break-words">{profile?.baby_name || 'Nama bayi'}</h3>
             <p className="mt-2 text-sm font-medium text-cocoa/70">Lahir: {profile?.birth_date ? formatDisplayDate(profile.birth_date) : '-'}</p>
           </div>
           <button type="button" onClick={() => setEditProfile(true)} className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-cocoa shadow-sm">
@@ -66,22 +63,29 @@ export function DashboardView({
             <h3 className="text-lg font-bold">Ringkasan</h3>
           </div>
           <div className="text-right">
-            <Pill tone="sage">{today}</Pill>
+            <Pill tone="sage">{schedule?.day ?? '—'}</Pill>
             <p className="mt-1 text-[11px] font-semibold text-cocoa/55">{todayDate}</p>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          {mealCards.map(({ label, key, time, tone }) => (
-            <div key={key} className={`rounded-[22px] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] ${tone}`}>
-              <div className="flex items-start justify-between gap-2">
-                <p className="text-xs font-bold uppercase tracking-[0.12em] opacity-90">{label}</p>
-                <span className="rounded-full bg-white/65 px-2 py-0.5 text-[10px] font-semibold text-cocoa/70">{time}</span>
+        {schedule ? (
+          <div className="grid grid-cols-2 gap-3">
+            {mealCards.map(({ label, key, time, tone }) => (
+              <div key={key} className={`rounded-[22px] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] ${tone}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] opacity-90">{label}</p>
+                  <span className="rounded-full bg-white/65 px-2 py-0.5 text-[10px] font-semibold text-cocoa/70">{time}</span>
+                </div>
+                <p className="mt-3 text-lg font-bold leading-tight">{schedule[key] || '-'}</p>
               </div>
-              <p className="mt-3 text-lg font-bold leading-tight">{schedule?.[key] || '-'}</p>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded-[22px] border border-dashed border-oat bg-white/65 px-4 py-5 text-center">
+            <p className="text-sm font-semibold text-cocoa/70">Belum ada jadual untuk tarikh ini.</p>
+            <p className="mt-1 text-xs text-cocoa/55">Tambah dalam tab Jadual dulu.</p>
+          </div>
+        )}
       </Card>
 
       <div className="grid grid-cols-3 gap-3">

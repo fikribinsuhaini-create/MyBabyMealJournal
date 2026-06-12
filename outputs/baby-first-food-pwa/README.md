@@ -35,6 +35,18 @@ VITE_GOOGLE_SCRIPT_URL=https://script.google.com/macros/s/XXXX/exec
 
 Tanpa konfigurasi ini, data disimpan dalam `localStorage` dan app tetap boleh digunakan offline.
 
+### Vercel
+
+`.env` lokal tak auto pergi Vercel. Dalam Vercel:
+
+1. Buka `Project Settings`.
+2. Pergi `Environment Variables`.
+3. Add `VITE_GOOGLE_SCRIPT_URL` dengan nilai URL `.../exec`.
+4. Set untuk `Production` dan `Preview`.
+5. Redeploy app.
+
+Kalau badge atas tulis `Local`, app belum connect ke Google Sheet lagi.
+
 ### Langkah setup penuh
 
 1. Buka Google Sheet baru.

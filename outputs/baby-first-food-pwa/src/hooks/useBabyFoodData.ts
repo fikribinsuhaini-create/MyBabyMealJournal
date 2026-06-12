@@ -48,6 +48,7 @@ export function useBabyFoodData() {
 
   const syncFromRemote = useCallback(async () => {
     if (!remoteEnabled) {
+      setSyncMessage('Google Sheet belum connect. Set VITE_GOOGLE_SCRIPT_URL di Vercel.');
       setSyncState(navigator.onLine ? 'local' : 'offline');
       return;
     }

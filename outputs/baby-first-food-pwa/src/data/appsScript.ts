@@ -45,6 +45,16 @@ async function jsonpRequest<T>(params: Record<string, string>) {
   });
 }
 
+async function postMutation(action: 'upsert' | 'delete' | 'seed', payload: Record<string, string>) {
+  if (!scriptUrl) return;
+
+  await fetch(scriptUrl, {
+    method: 'POST',
+    mode: 'no-cors',
+    body: new URLSearchParams({ action, ...payload }),
+  });
+}
+
 export async function bootstrapAppsScript(): Promise<Partial<AppData> | null> {
   if (!scriptUrl) return null;
   const response = await jsonpRequest<Partial<AppData>>({ action: 'bootstrap' });
@@ -60,29 +70,23 @@ export async function fetchAppsScriptData(): Promise<Partial<AppData> | null> {
 }
 
 export async function upsertAppsScriptRow(sheet: SheetName, row: Record<string, string>) {
-  const response = await jsonpRequest<{ saved?: boolean }>({
-    action: 'upsert',
+  await postMutation('upsert', {
     sheet,
     row: JSON.stringify(row),
   });
-  if (!response?.ok) throw new Error(response?.message || 'Apps Script upsert failed');
 }
 
 export async function deleteAppsScriptRow(sheet: SheetName, id: string) {
-  const response = await jsonpRequest<{ deleted?: boolean }>({
-    action: 'delete',
+  await postMutation('delete', {
     sheet,
     id,
   });
-  if (!response?.ok) throw new Error(response?.message || 'Apps Script delete failed');
 }
 
 export async function seedAppsScriptData(data: AppData) {
-  const response = await jsonpRequest<{ seeded?: boolean }>({
-    action: 'seed',
+  await postMutation('seed', {
     data: JSON.stringify(data),
   });
-  if (!response?.ok) throw new Error(response?.message || 'Apps Script seed failed');
 }
 
 export function appsScriptEnabled() {

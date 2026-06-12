@@ -2,6 +2,16 @@
 
 PWA mobile-first untuk ibu bapa merancang menu, jadual makan, resepi dan rekod makanan pertama bayi 6 bulan ke atas.
 
+## Cara Guna
+
+1. Buka tab `Dashboard` untuk isi profil bayi dan semak umur semasa.
+2. Pergi `Resepi` untuk tambah resepi baharu, guna gambar dari camera atau upload file.
+3. Pergi `Menu` untuk rancang makanan ikut minggu, tarikh, dan masa makan.
+4. Pergi `Jadual` untuk pilih menu yang sudah ada dan susun ikut sarapan, tengah hari, petang, malam.
+5. Pergi `Tracker` untuk simpan feedback bayi selepas makan, sama ada dari menu atau secara manual.
+6. Simpan data dan tunggu status `Synced` jika Google Apps Script sudah connect.
+7. Kalau status `Local`, data masih ada dalam phone browser, cuma belum hantar ke Google Sheet.
+
 ## Jalankan
 
 ```bash

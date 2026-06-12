@@ -54,7 +54,29 @@ function doGet(e) {
 function doPost(e) {
   try {
     ensureSheets_();
-    return respond_(e, false, { message: 'Use GET actions' });
+    const action = (e.parameter.action || '').trim();
+
+    if (action === 'upsert') {
+      const sheetName = e.parameter.sheet;
+      const row = JSON.parse(e.parameter.row || '{}');
+      upsertRow_(sheetName, row);
+      return respond_(e, true, { data: readAll_() });
+    }
+
+    if (action === 'delete') {
+      const sheetName = e.parameter.sheet;
+      const id = e.parameter.id;
+      deleteRow_(sheetName, id);
+      return respond_(e, true, { data: readAll_() });
+    }
+
+    if (action === 'seed') {
+      const data = JSON.parse(e.parameter.data || '{}');
+      seedData_(data);
+      return respond_(e, true, { data: readAll_() });
+    }
+
+    return respond_(e, false, { message: 'Unknown POST action' });
   } catch (error) {
     return respond_(e, false, { message: String(error) });
   }

@@ -38,7 +38,10 @@ export function ScheduleView({
   const activeRecord = editing ?? (adding ? ({ week: activeWeek, date: todayIso() } as Partial<FeedingSchedule>) : null);
   const menuOptions = useMemo(() => {
     const base = ['-'];
-    const plannedMenus = menuRows.filter((row) => row.week === activeWeek).map((row) => row.menu).filter(Boolean);
+    const plannedMenus = menuRows
+      .filter((row) => row.week === activeWeek)
+      .map((row) => `${row.age_category} · ${row.menu}`)
+      .filter((value) => Boolean(value));
     const currentValues = activeRecord
       ? [activeRecord.breakfast, activeRecord.lunch, activeRecord.evening, activeRecord.dinner].filter((value): value is string => Boolean(value))
       : [];

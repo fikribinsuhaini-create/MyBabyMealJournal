@@ -19,6 +19,7 @@ export type BabyProfile = {
 export type MenuPlanner = {
   id: string;
   week: string;
+  age_category: AgeCategory;
   day: string;
   menu: string;
 };
@@ -43,7 +44,6 @@ export type Recipe = {
   ingredients: string;
   instructions: string;
   notes: string;
-  source_link: string;
 };
 
 export type FoodTracker = {

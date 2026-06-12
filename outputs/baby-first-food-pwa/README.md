@@ -64,9 +64,9 @@ Kalau badge atas tulis `Local`, app belum connect ke Google Sheet lagi.
 ### Sheet yang akan dicipta automatik
 
 - `BabyProfile`: `id`, `baby_name`, `birth_date`
-- `MenuPlanner`: `id`, `week`, `date`, `day`, `menu`, `ingredients`, `cooking_method`, `reaction`, `notes`, `meal_time`
+- `MenuPlanner`: `id`, `week`, `age_category`, `day`, `menu`
 - `FeedingSchedule`: `id`, `week`, `day`, `breakfast`, `lunch`, `evening`, `dinner`
-- `Recipes`: `id`, `title`, `image_url`, `age_category`, `category`, `ingredients`, `instructions`, `notes`, `source_link`
+- `Recipes`: `id`, `title`, `image_url`, `age_category`, `category`, `ingredients`, `instructions`, `notes`
 - `FoodTracker`: `id`, `food_name`, `introduced_date`, `status`, `reaction`, `notes`
 
 ## Install PWA

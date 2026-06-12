@@ -1,4 +1,4 @@
-import { Edit3, ExternalLink, Plus, Trash2 } from 'lucide-react';
+import { Edit3, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { FormModal } from '../components/FormModal';
 import { Card, EmptyState, IconButton, Pill, SearchInput, SectionTitle } from '../components/Ui';
@@ -95,11 +95,6 @@ export function RecipesView({
                 <span className="font-semibold text-cocoa/70">Cara: </span>
                 {row.instructions}
               </p>
-              {row.source_link ? (
-                <a href={row.source_link} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-sageDeep">
-                  Sumber <ExternalLink size={15} />
-                </a>
-              ) : null}
             </div>
           </Card>
         ))}
@@ -118,7 +113,6 @@ export function RecipesView({
             { name: 'ingredients', label: 'Bahan', type: 'textarea' },
             { name: 'instructions', label: 'Cara Penyediaan', type: 'textarea' },
             { name: 'notes', label: 'Nota', type: 'textarea' },
-            { name: 'source_link', label: 'Pautan Sumber', type: 'url' },
           ]}
           initialValues={activeRecord as Record<string, string>}
           onClose={() => {

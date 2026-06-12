@@ -2,7 +2,7 @@ import { Edit3, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { FormModal } from '../components/FormModal';
 import { Card, EmptyState, IconButton, Pill, SearchInput, SectionTitle, WeekTabs } from '../components/Ui';
-import { weeks } from '../constants';
+import { ageCategories, weeks } from '../constants';
 import type { MenuPlanner } from '../types';
 
 const menuDays = ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'];
@@ -25,10 +25,10 @@ export function MenuView({
     const query = search.toLowerCase();
     return rows
       .filter((row) => row.week === activeWeek)
-      .filter((row) => [row.week, row.day, row.menu].join(' ').toLowerCase().includes(query));
+      .filter((row) => [row.week, row.age_category, row.day, row.menu].join(' ').toLowerCase().includes(query));
   }, [activeWeek, rows, search]);
 
-  const activeRecord = editing ?? (adding ? ({ week: activeWeek, day: menuDays[0] } as Partial<MenuPlanner>) : null);
+  const activeRecord = editing ?? (adding ? ({ week: activeWeek, age_category: ageCategories[0], day: menuDays[0] } as Partial<MenuPlanner>) : null);
 
   return (
     <div className="space-y-4">
@@ -41,7 +41,7 @@ export function MenuView({
             Tambah
           </button>
         }
-      />
+      /> 
 
       <WeekTabs weeks={weeks} active={activeWeek} setActive={setActiveWeek} />
       <SearchInput value={search} onChange={setSearch} placeholder="Cari Day 1, Bubur..." />
@@ -53,6 +53,7 @@ export function MenuView({
               <div>
                 <div className="mb-2 flex flex-wrap gap-2">
                   <Pill tone="sage">{row.week}</Pill>
+                  <Pill tone="peach">{row.age_category}</Pill>
                   <Pill tone="butter">{row.day}</Pill>
                 </div>
                 <h3 className="text-lg font-bold">{row.menu}</h3>
@@ -77,6 +78,7 @@ export function MenuView({
           title={editing ? 'Kemaskini Menu' : 'Tambah Menu'}
           fields={[
             { name: 'week', label: 'Minggu', type: 'select', options: weeks },
+            { name: 'age_category', label: 'Kategori Umur', type: 'select', options: ageCategories },
             { name: 'day', label: 'Hari', type: 'select', options: menuDays },
             { name: 'menu', label: 'Menu / Makanan' },
           ]}

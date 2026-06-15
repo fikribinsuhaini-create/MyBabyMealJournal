@@ -3,7 +3,7 @@ const SPREADSHEET_ID = '1Pudo5y5GyTxQalhXAC1KELEqFZ_FtVMXkU95mK3HQ8k';
 const SHEETS = {
   BabyProfile: ['id', 'baby_name', 'birth_date'],
   MenuPlanner: ['id', 'week', 'age_category', 'day', 'menu'],
-  FeedingSchedule: ['id', 'week', 'date', 'day', 'breakfast', 'lunch', 'evening', 'dinner'],
+  FeedingSchedule: ['id', 'week', 'age_category', 'date', 'day', 'breakfast', 'lunch', 'evening', 'dinner'],
   Recipes: ['id', 'title', 'image_url', 'age_category', 'category', 'ingredients', 'instructions', 'notes'],
   FoodTracker: ['id', 'food_name', 'introduced_date', 'status', 'reaction', 'notes'],
 };

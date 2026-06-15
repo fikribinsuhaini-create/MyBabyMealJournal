@@ -36,6 +36,15 @@ export function TrackerView({
     [menuRows]
   );
   const selectedMenu = menuRows.find((row) => row.id === selectedMenuId) ?? menuRows[0];
+  const sortedRows = useMemo(
+    () =>
+      [...rows].sort((left, right) => {
+        const leftDate = new Date(left.introduced_date).getTime();
+        const rightDate = new Date(right.introduced_date).getTime();
+        return rightDate - leftDate;
+      }),
+    [rows]
+  );
   const activeRecord =
     editing ??
     (adding
@@ -69,7 +78,12 @@ export function TrackerView({
 
       {menuOptions.length ? (
         <Card className="space-y-3">
-          <p className="text-sm font-bold">Ambil dari menu</p>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-sageDeep">Pilih dari menu</p>
+              <p className="text-sm text-cocoa/65">Cepat tambah feedback dari plan sedia ada</p>
+            </div>
+          </div>
           <div className="grid gap-2">
             <select
               value={selectedMenuId}
@@ -103,15 +117,17 @@ export function TrackerView({
         </Card>
       ) : null}
 
-      <div className="relative space-y-3 before:absolute before:bottom-4 before:left-5 before:top-4 before:w-0.5 before:bg-sage/35">
-        {rows.map((row) => (
-          <Card key={row.id} className="relative ml-7">
-            <span className="absolute -left-9 top-6 h-4 w-4 rounded-full border-4 border-cream bg-sage" />
-            <div className="mb-3 flex items-start justify-between gap-3">
-              <div>
-                <Pill tone={statusTone(row.status)}>{row.status}</Pill>
-                <h3 className="mt-2 text-lg font-bold">{row.food_name}</h3>
-                <p className="text-xs font-semibold text-cocoa/55">{formatDisplayDate(row.introduced_date)}</p>
+      <div className="space-y-3">
+        {sortedRows.map((row) => (
+          <Card key={row.id} className="overflow-hidden">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="mb-2 flex flex-wrap gap-2">
+                  <Pill tone={statusTone(row.status)}>{row.status}</Pill>
+                  <Pill tone="sage">{formatDisplayDate(row.introduced_date)}</Pill>
+                </div>
+                <h3 className="break-words text-xl font-bold leading-tight">{row.food_name}</h3>
+                <p className="mt-1 text-sm text-cocoa/55">Makanan pertama diperkenalkan</p>
               </div>
               <div className="flex gap-2">
                 <IconButton label="Kemaskini" onClick={() => setEditing(row)}>
@@ -122,15 +138,23 @@ export function TrackerView({
                 </IconButton>
               </div>
             </div>
-            <div className="flex flex-wrap gap-2">
+
+            <div className="mt-4 flex flex-wrap gap-2">
               <Pill tone={row.reaction.includes('Ada Reaksi') ? 'berry' : row.reaction === 'Belum Dinilai' ? 'butter' : 'peach'}>{row.reaction}</Pill>
-              {row.notes ? <Pill tone="sage">{row.notes}</Pill> : null}
+              {row.notes ? <Pill tone="sage">Ada catatan</Pill> : null}
             </div>
+
+            {row.notes ? (
+              <div className="mt-4 rounded-[18px] bg-cream px-4 py-3">
+                <p className="text-xs font-bold uppercase tracking-[0.12em] text-cocoa/50">Diari Harian</p>
+                <p className="mt-2 text-sm leading-relaxed text-cocoa/80">{row.notes}</p>
+              </div>
+            ) : null}
           </Card>
         ))}
       </div>
 
-      {!rows.length ? <EmptyState text="Belum ada feedback makanan." /> : null}
+      {!sortedRows.length ? <EmptyState text="Belum ada feedback makanan." /> : null}
 
       {activeRecord ? (
         <FormModal

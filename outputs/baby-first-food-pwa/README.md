@@ -65,7 +65,7 @@ Kalau badge atas tulis `Local`, app belum connect ke Google Sheet lagi.
 
 - `BabyProfile`: `id`, `baby_name`, `birth_date`
 - `MenuPlanner`: `id`, `week`, `age_category`, `day`, `menu`
-- `FeedingSchedule`: `id`, `week`, `day`, `breakfast`, `lunch`, `evening`, `dinner`
+- `FeedingSchedule`: `id`, `week`, `age_category`, `date`, `day`, `breakfast`, `lunch`, `evening`, `dinner`
 - `Recipes`: `id`, `title`, `image_url`, `age_category`, `category`, `ingredients`, `instructions`, `notes`
 - `FoodTracker`: `id`, `food_name`, `introduced_date`, `status`, `reaction`, `notes`
 

@@ -1,5 +1,5 @@
-import { Edit3, Plus, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { ChevronDown, ChevronUp, Edit3, Plus, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { FormModal } from '../components/FormModal';
 import { Card, EmptyState, IconButton, Pill, SearchInput, SectionTitle } from '../components/Ui';
 import { ageCategories, weeks } from '../constants';
@@ -30,6 +30,7 @@ export function MenuView({
 }) {
   const [activeAge, setActiveAge] = useState(ageCategories[0]);
   const [search, setSearch] = useState('');
+  const [openWeek, setOpenWeek] = useState(weeks[0]);
   const [editing, setEditing] = useState<MenuPlanner | null>(null);
   const [adding, setAdding] = useState(false);
 
@@ -56,7 +57,11 @@ export function MenuView({
     [filtered]
   );
 
-  const activeRecord = editing ?? (adding ? ({ week: weeks[0], age_category: activeAge, day: menuDays[0] } as Partial<MenuPlanner>) : null);
+  useEffect(() => {
+    setOpenWeek(groupedByWeek[0]?.week ?? weeks[0]);
+  }, [activeAge, groupedByWeek]);
+
+  const activeRecord = editing ?? (adding ? ({ week: activeWeekFromList(groupedByWeek), age_category: activeAge, day: menuDays[0] } as Partial<MenuPlanner>) : null);
 
   return (
     <div className="space-y-4">
@@ -88,43 +93,56 @@ export function MenuView({
 
       <SearchInput value={search} onChange={setSearch} placeholder="Cari Day 1, Bubur..." />
 
-      <div className="space-y-4">
-        {groupedByWeek.map(({ week, items }) => (
-          <Card key={week} className={`overflow-hidden border-l-4 ${ageTone(activeAge)}`}>
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div>
-                <Pill tone="sage">{week}</Pill>
-                <h3 className="mt-2 text-lg font-bold">{activeAge}</h3>
-              </div>
-              <p className="text-xs font-semibold text-cocoa/55">{items.length} menu</p>
-            </div>
+      <div className="space-y-3">
+        {groupedByWeek.map(({ week, items }) => {
+          const isOpen = openWeek === week;
 
-            <div className="space-y-2">
-              {items.map((row) => (
-                <div key={row.id} className="flex items-start gap-3 rounded-[20px] bg-cream px-3 py-3">
-                  <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[16px] bg-white text-center shadow-sm">
-                    <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-cocoa/45">Day</span>
-                    <span className="text-base font-bold leading-none text-cocoa">{getDayNumber(row.day)}</span>
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cocoa/50">{row.day}</p>
-                    <p className="mt-1 break-words text-base font-bold leading-tight text-cocoa">{row.menu}</p>
-                  </div>
-
-                  <div className="flex gap-2">
-                    <IconButton label="Kemaskini" onClick={() => setEditing(row)}>
-                      <Edit3 size={17} />
-                    </IconButton>
-                    <IconButton label="Padam" onClick={() => remove(row.id)} tone="danger">
-                      <Trash2 size={17} />
-                    </IconButton>
-                  </div>
+          return (
+            <Card key={week} className={`overflow-hidden border-l-4 ${ageTone(activeAge)}`}>
+              <button
+                type="button"
+                onClick={() => setOpenWeek(isOpen ? '' : week)}
+                className="flex w-full items-center justify-between gap-3 text-left"
+              >
+                <div>
+                  <Pill tone="sage">{week}</Pill>
+                  <h3 className="mt-2 text-lg font-bold">{activeAge}</h3>
                 </div>
-              ))}
-            </div>
-          </Card>
-        ))}
+                <div className="flex items-center gap-2">
+                  <p className="text-xs font-semibold text-cocoa/55">{items.length} menu</p>
+                  {isOpen ? <ChevronUp size={18} className="text-cocoa/60" /> : <ChevronDown size={18} className="text-cocoa/60" />}
+                </div>
+              </button>
+
+              {isOpen ? (
+                <div className="mt-4 space-y-2 border-t border-oat/60 pt-4">
+                  {items.map((row) => (
+                    <div key={row.id} className="flex items-start gap-3 rounded-[20px] bg-cream px-3 py-3">
+                      <div className="grid h-12 w-12 shrink-0 place-items-center rounded-[16px] bg-white text-center shadow-sm">
+                        <span className="text-[9px] font-bold uppercase tracking-[0.1em] text-cocoa/45">Day</span>
+                        <span className="text-base font-bold leading-none text-cocoa">{getDayNumber(row.day)}</span>
+                      </div>
+
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cocoa/50">{row.day}</p>
+                        <p className="mt-1 break-words text-base font-bold leading-tight text-cocoa">{row.menu}</p>
+                      </div>
+
+                      <div className="flex gap-2">
+                        <IconButton label="Kemaskini" onClick={() => setEditing(row)}>
+                          <Edit3 size={17} />
+                        </IconButton>
+                        <IconButton label="Padam" onClick={() => remove(row.id)} tone="danger">
+                          <Trash2 size={17} />
+                        </IconButton>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </Card>
+          );
+        })}
       </div>
 
       {!groupedByWeek.length ? <EmptyState text="Tiada rekod menu untuk umur ini." /> : null}
@@ -152,4 +170,8 @@ export function MenuView({
       ) : null}
     </div>
   );
+}
+
+function activeWeekFromList(groupedByWeek: Array<{ week: string }>) {
+  return groupedByWeek[0]?.week ?? weeks[0];
 }

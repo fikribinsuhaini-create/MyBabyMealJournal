@@ -57,9 +57,11 @@ export function FormModal({
   fields: FieldConfig[];
   initialValues?: Record<string, string>;
   onClose: () => void;
-  onSubmit: (values: Record<string, string>) => void;
+  onSubmit: (values: Record<string, string>) => void | Promise<void>;
 }) {
   const [values, setValues] = useState<Record<string, string>>({});
+  const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const defaults = fields.reduce<Record<string, string>>((acc, field) => {
@@ -81,9 +83,15 @@ export function FormModal({
 
         <form
           className="flex-1 space-y-4 overflow-y-auto px-5 py-5"
-          onSubmit={(event) => {
+          onSubmit={async (event) => {
             event.preventDefault();
-            onSubmit(values);
+            if (isProcessingImage || isSubmitting) return;
+            setIsSubmitting(true);
+            try {
+              await Promise.resolve(onSubmit(values));
+            } finally {
+              setIsSubmitting(false);
+            }
           }}
         >
           {fields.map((field) => (
@@ -110,14 +118,21 @@ export function FormModal({
                   <input
                     type="file"
                     accept="image/*"
+                    disabled={isProcessingImage || isSubmitting}
                     onChange={async (event) => {
                       const file = event.target.files?.[0];
                       if (!file) return;
-                      const imageUrl = await resizeImage(file);
-                      setValues((current) => ({ ...current, [field.name]: imageUrl }));
+                      setIsProcessingImage(true);
+                      try {
+                        const imageUrl = await resizeImage(file);
+                        setValues((current) => ({ ...current, [field.name]: imageUrl }));
+                      } finally {
+                        setIsProcessingImage(false);
+                      }
                     }}
                     className="w-full rounded-[20px] border border-dashed border-oat bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-peach file:px-4 file:py-2 file:font-semibold file:text-white"
                   />
+                  {isProcessingImage ? <p className="text-xs font-semibold text-cocoa/55">Memproses gambar...</p> : null}
                 </div>
               ) : field.type === 'select' ? (
                 <select
@@ -144,11 +159,15 @@ export function FormModal({
           ))}
 
           <div className="sticky bottom-0 grid grid-cols-2 gap-3 bg-cream pt-3">
-            <button type="button" onClick={onClose} className="h-12 rounded-[18px] bg-white font-semibold text-cocoa shadow-sm">
+            <button type="button" onClick={onClose} disabled={isSubmitting} className="h-12 rounded-[18px] bg-white font-semibold text-cocoa shadow-sm disabled:opacity-60">
               Batal
             </button>
-            <button type="submit" className="h-12 rounded-[18px] bg-sage font-semibold text-white shadow-soft">
-              Simpan
+            <button
+              type="submit"
+              disabled={isSubmitting || isProcessingImage}
+              className="h-12 rounded-[18px] bg-sage font-semibold text-white shadow-soft disabled:opacity-60"
+            >
+              {isProcessingImage ? 'Proses Gambar' : isSubmitting ? 'Menyimpan' : 'Simpan'}
             </button>
           </div>
         </form>

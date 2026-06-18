@@ -69,8 +69,28 @@ async function postMutation(action: 'upsert' | 'delete' | 'seed', payload: Recor
   });
 
   document.body.appendChild(form);
+  let readyForResponse = false;
+  const loadPromise = new Promise<void>((resolve) => {
+    const timeoutId = window.setTimeout(() => resolve(), 15000);
+    iframe.addEventListener(
+      'load',
+      () => {
+        if (!readyForResponse) return;
+        window.setTimeout(() => {
+          window.clearTimeout(timeoutId);
+          resolve();
+        }, 300);
+      },
+      { once: true }
+    );
+  });
+
+  window.setTimeout(() => {
+    readyForResponse = true;
+  }, 200);
   form.submit();
-  await wait(800);
+  await loadPromise;
+  await wait(500);
   form.remove();
   iframe.remove();
 }

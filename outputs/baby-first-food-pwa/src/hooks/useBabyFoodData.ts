@@ -136,6 +136,9 @@ export function useBabyFoodData() {
         if (!existsInRemote) {
           throw new Error('Apps Script save tak sampai ke Google Sheet');
         }
+        if (remote) {
+          commit(mergeRemoteData(next, remote));
+        }
         setSyncState('synced');
       } catch (error) {
         setSyncState('error');
@@ -170,6 +173,9 @@ export function useBabyFoodData() {
         const existsInRemote = remoteRows.some((item) => item.id === id);
         if (existsInRemote) {
           throw new Error('Apps Script delete tak sampai ke Google Sheet');
+        }
+        if (remote) {
+          commit(mergeRemoteData(next, remote));
         }
         setSyncState('synced');
       } catch (error) {

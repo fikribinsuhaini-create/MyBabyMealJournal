@@ -52,6 +52,28 @@ function mergeRemoteData(local: AppData, remote: Partial<AppData>) {
   return next;
 }
 
+function rowMatchesRemote<T extends SheetName>(sheet: T, localRow: RowFor<T>, remoteRow: RowFor<T>) {
+  if (localRow.id !== remoteRow.id) return false;
+
+  if (sheet === 'FoodTracker') {
+    const nextLocal = localRow as RowFor<'FoodTracker'>;
+    const nextRemote = remoteRow as RowFor<'FoodTracker'>;
+    const wantsUploadedImage = Boolean(nextLocal.image_url) && nextLocal.image_url.startsWith('data:image/');
+    const remoteHasUploadedImage = Boolean(nextRemote.image_url) && !nextRemote.image_url.startsWith('data:image/');
+
+    return (
+      nextLocal.food_name === nextRemote.food_name &&
+      nextLocal.introduced_date === nextRemote.introduced_date &&
+      nextLocal.status === nextRemote.status &&
+      nextLocal.reaction === nextRemote.reaction &&
+      nextLocal.notes === nextRemote.notes &&
+      (wantsUploadedImage ? remoteHasUploadedImage : nextLocal.image_url === nextRemote.image_url)
+    );
+  }
+
+  return JSON.stringify(localRow) === JSON.stringify(remoteRow);
+}
+
 export function useBabyFoodData() {
   const [data, setData] = useState<AppData>(() => normalizeAppData(loadLocalData()));
   const [syncState, setSyncState] = useState<SyncState>('local');
@@ -158,10 +180,10 @@ export function useBabyFoodData() {
         setSyncState('syncing');
         await upsertAppsScriptRow(sheet, savedRow as Record<string, string>);
         const remote =
-          (await waitForRemoteRows(sheet, (remoteRows) => remoteRows.some((item) => item.id === id))) ??
+          (await waitForRemoteRows(sheet, (remoteRows) => remoteRows.some((item) => rowMatchesRemote(sheet, savedRow, item)))) ??
           (await fetchAppsScriptData());
         const remoteRows = (remote?.[sheet] ?? []) as RowFor<T>[];
-        if (!remoteRows.some((item) => item.id === id)) {
+        if (!remoteRows.some((item) => rowMatchesRemote(sheet, savedRow, item))) {
           throw new Error('Apps Script save tak sampai ke Google Sheet. Cuba redeploy Apps Script atau kecilkan gambar lagi.');
         }
         if (remote) {

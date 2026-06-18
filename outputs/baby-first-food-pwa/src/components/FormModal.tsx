@@ -1,7 +1,7 @@
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-const MAX_IMAGE_LENGTH = 42000;
+const MAX_IMAGE_LENGTH = 50000;
 
 export type FieldConfig = {
   name: string;
@@ -26,26 +26,37 @@ async function resizeImage(file: File) {
     element.src = dataUrl;
   });
 
-  const sizes = [512, 420, 320, 240, 180, 140];
-  const qualities = [0.72, 0.6, 0.5, 0.45, 0.35, 0.28];
+  const formats = ['image/webp', 'image/jpeg'];
+  const longestEdge = Math.max(image.width, image.height);
+  const initialEdge = Math.min(640, longestEdge);
 
-  for (let index = 0; index < sizes.length; index += 1) {
-    const maxSize = sizes[index];
-    const quality = qualities[index];
-    const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(image.width * scale));
-    canvas.height = Math.max(1, Math.round(image.height * scale));
-    const context = canvas.getContext('2d');
-    if (!context) return dataUrl;
-    context.drawImage(image, 0, 0, canvas.width, canvas.height);
-    const compressed = canvas.toDataURL('image/jpeg', quality);
-    if (compressed.length <= MAX_IMAGE_LENGTH) {
-      return compressed;
+  for (let formatIndex = 0; formatIndex < formats.length; formatIndex += 1) {
+    const format = formats[formatIndex];
+    let maxSize = initialEdge;
+
+    while (maxSize >= 64) {
+      let quality = 0.82;
+
+      while (quality >= 0.12) {
+        const scale = Math.min(1, maxSize / longestEdge);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext('2d');
+        if (!context) return dataUrl;
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        const compressed = canvas.toDataURL(format, quality);
+        if (compressed.length <= MAX_IMAGE_LENGTH) {
+          return compressed;
+        }
+        quality -= 0.08;
+      }
+
+      maxSize = Math.floor(maxSize * 0.8);
     }
   }
 
-  throw new Error('Gambar terlalu besar. Pilih gambar lebih kecil.');
+  throw new Error('Gambar terlalu besar. Cuba gambar lebih dekat, crop dulu, atau guna screenshot kecil.');
 }
 
 export function FormModal({

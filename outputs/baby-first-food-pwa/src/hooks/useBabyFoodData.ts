@@ -104,7 +104,7 @@ export function useBabyFoodData() {
 
   const waitForRemoteRows = useCallback(
     async <T extends SheetName>(sheet: T, matcher: (rows: RowFor<T>[]) => boolean) => {
-      for (let attempt = 0; attempt < 5; attempt += 1) {
+      for (let attempt = 0; attempt < 12; attempt += 1) {
         const remote = await fetchAppsScriptData();
         const remoteRows = (remote?.[sheet] ?? []) as RowFor<T>[];
         if (matcher(remoteRows)) {
@@ -137,7 +137,7 @@ export function useBabyFoodData() {
         return;
       }
 
-      if (trackerRow && typeof trackerRow.image_url === 'string' && trackerRow.image_url.length > 42000) {
+      if (trackerRow && typeof trackerRow.image_url === 'string' && trackerRow.image_url.length > 50000) {
         setSyncState('error');
         setSyncMessage('Gambar tracker terlalu besar. Pilih gambar lebih kecil.');
         return;

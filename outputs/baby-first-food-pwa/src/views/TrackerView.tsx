@@ -230,8 +230,8 @@ export function TrackerView({
             setAdding(false);
             setPrefill(null);
           }}
-          onSubmit={async (values) => {
-            await upsert({ id: editing?.id ?? '', ...values } as FoodTracker);
+          onSubmit={(values) => {
+            void upsert({ id: editing?.id ?? '', ...values } as FoodTracker);
             setEditing(null);
             setAdding(false);
             setPrefill(null);

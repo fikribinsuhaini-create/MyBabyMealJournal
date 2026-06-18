@@ -179,10 +179,25 @@ export function useBabyFoodData() {
         setSyncMessage('');
         setSyncState('syncing');
         await upsertAppsScriptRow(sheet, savedRow as Record<string, string>);
-        const remote =
+        let remote =
           (await waitForRemoteRows(sheet, (remoteRows) => remoteRows.some((item) => rowMatchesRemote(sheet, savedRow, item)))) ??
           (await fetchAppsScriptData());
-        const remoteRows = (remote?.[sheet] ?? []) as RowFor<T>[];
+        let remoteRows = (remote?.[sheet] ?? []) as RowFor<T>[];
+
+        const needsImageRetry =
+          sheet === 'FoodTracker' &&
+          typeof (savedRow as RowFor<'FoodTracker'>).image_url === 'string' &&
+          (savedRow as RowFor<'FoodTracker'>).image_url.startsWith('data:image/') &&
+          !remoteRows.some((item) => rowMatchesRemote(sheet, savedRow, item));
+
+        if (needsImageRetry) {
+          await upsertAppsScriptRow(sheet, savedRow as Record<string, string>, 'iframe');
+          remote =
+            (await waitForRemoteRows(sheet, (nextRows) => nextRows.some((item) => rowMatchesRemote(sheet, savedRow, item)))) ??
+            (await fetchAppsScriptData());
+          remoteRows = (remote?.[sheet] ?? []) as RowFor<T>[];
+        }
+
         if (!remoteRows.some((item) => rowMatchesRemote(sheet, savedRow, item))) {
           throw new Error('Apps Script save tak sampai ke Google Sheet. Cuba redeploy Apps Script atau kecilkan gambar lagi.');
         }

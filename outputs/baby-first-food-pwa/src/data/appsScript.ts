@@ -45,7 +45,7 @@ async function jsonpRequest<T>(params: Record<string, string>) {
   });
 }
 
-async function postMutation(action: 'upsert' | 'delete' | 'seed', payload: Record<string, string>) {
+async function postMutation(action: 'upsert' | 'delete' | 'seed', payload: Record<string, string>, mode: 'auto' | 'iframe' = 'auto') {
   if (!scriptUrl) return;
 
   const body = new URLSearchParams();
@@ -54,22 +54,24 @@ async function postMutation(action: 'upsert' | 'delete' | 'seed', payload: Recor
     body.set(key, key === 'row' || key === 'data' ? encodeURIComponent(value) : value);
   });
 
-  try {
-    await Promise.race([
-      fetch(scriptUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
-        },
-        body: body.toString(),
-      }),
-      wait(4000),
-    ]);
-    await wait(250);
-    return;
-  } catch (error) {
-    // Fallback for environments where cross-origin fetch to Apps Script is blocked.
+  if (mode === 'auto') {
+    try {
+      await Promise.race([
+        fetch(scriptUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+          },
+          body: body.toString(),
+        }),
+        wait(4000),
+      ]);
+      await wait(250);
+      return;
+    } catch (error) {
+      // Fallback for environments where cross-origin fetch to Apps Script is blocked.
+    }
   }
 
   const frameName = `babyFoodPost_${crypto.randomUUID().replace(/-/g, '')}`;
@@ -143,7 +145,7 @@ export async function fetchAppsScriptData(): Promise<Partial<AppData> | null> {
   return response.data ?? null;
 }
 
-export async function upsertAppsScriptRow(sheet: SheetName, row: Record<string, string>) {
+export async function upsertAppsScriptRow(sheet: SheetName, row: Record<string, string>, mode: 'auto' | 'iframe' = 'auto') {
   const rowString = JSON.stringify(row);
   const hasLargeImagePayload = Object.values(row).some((value) => typeof value === 'string' && value.startsWith('data:image/'));
 
@@ -161,7 +163,7 @@ export async function upsertAppsScriptRow(sheet: SheetName, row: Record<string, 
   await postMutation('upsert', {
     sheet,
     row: rowString,
-  });
+  }, mode);
 }
 
 export async function deleteAppsScriptRow(sheet: SheetName, id: string) {

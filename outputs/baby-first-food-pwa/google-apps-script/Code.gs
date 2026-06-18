@@ -8,6 +8,8 @@ const SHEETS = {
   FoodTracker: ['id', 'food_name', 'introduced_date', 'status', 'reaction', 'notes'],
 };
 
+const AGE_CATEGORIES = ['6 Bulan', '7 Bulan', '8 Bulan', '9 Bulan', '10 Bulan', '11 Bulan', '12 Bulan Ke Atas'];
+
 function doGet(e) {
   try {
     const action = (e.parameter.action || 'readAll').trim();
@@ -94,7 +96,34 @@ function ensureSheets_() {
     if (!sameHeaders) {
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     }
+
+    if (sheetName === 'FeedingSchedule') {
+      migrateFeedingScheduleSheet_(sheet, headers);
+    }
   });
+}
+
+function migrateFeedingScheduleSheet_(sheet, headers) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return;
+
+  const values = sheet.getRange(2, 1, lastRow - 1, headers.length).getValues();
+  let needsMigration = false;
+  const migrated = values.map((row) => {
+    const entry = headers.reduce((accumulator, header, index) => {
+      accumulator[header] = formatCell_(row[index]);
+      return accumulator;
+    }, {});
+    const normalized = normalizeFeedingScheduleRow_(entry);
+    if (JSON.stringify(entry) !== JSON.stringify(normalized)) {
+      needsMigration = true;
+    }
+    return headers.map((header) => normalized[header] || '');
+  });
+
+  if (needsMigration) {
+    sheet.getRange(2, 1, migrated.length, headers.length).setValues(migrated);
+  }
 }
 
 function readAll_() {
@@ -117,7 +146,8 @@ function readAll_() {
       .map((row) => headers.reduce((entry, header, index) => {
         entry[header] = formatCell_(row[index]);
         return entry;
-      }, {}));
+      }, {}))
+      .map((row) => sheetName === 'FeedingSchedule' ? normalizeFeedingScheduleRow_(row) : row);
   });
 
   return payload;
@@ -130,7 +160,8 @@ function upsertRow_(sheetName, row) {
   const id = String(row.id || '').trim();
   if (!id) throw new Error('Missing row id');
 
-  const values = headers.map((header) => row[header] === null || row[header] === undefined ? '' : String(row[header]));
+  const normalizedRow = sheetName === 'FeedingSchedule' ? normalizeFeedingScheduleRow_(row) : row;
+  const values = headers.map((header) => normalizedRow[header] === null || normalizedRow[header] === undefined ? '' : String(normalizedRow[header]));
   const dataRowCount = sheet.getLastRow() - 1;
   const ids = dataRowCount > 0 ? sheet.getRange(2, 1, dataRowCount, 1).getValues().flat() : [];
   const existingIndex = ids.findIndex((value) => String(value) === id);
@@ -163,6 +194,56 @@ function seedData_(data) {
 
 function validateSheet_(sheetName) {
   if (!SHEETS[sheetName]) throw new Error('Invalid sheet name');
+}
+
+function normalizeFeedingScheduleRow_(row) {
+  const next = Object.assign({}, row);
+  const legacyDateStoredInAgeCategory = isIsoDate_(next.age_category) && !isIsoDate_(next.date);
+
+  if (legacyDateStoredInAgeCategory) {
+    const legacyDate = next.age_category;
+    const legacyDay = next.date;
+    const inferredAgeCategory = inferAgeCategory_(next);
+    next.date = legacyDate;
+    next.day = legacyDay || next.day;
+    next.age_category = inferredAgeCategory || next.age_category;
+  }
+
+  if (!isValidAgeCategory_(next.age_category)) {
+    const inferredAgeCategory = inferAgeCategory_(next);
+    if (inferredAgeCategory) {
+      next.age_category = inferredAgeCategory;
+    }
+  }
+
+  return next;
+}
+
+function inferAgeCategory_(row) {
+  const fields = [row.breakfast, row.lunch, row.evening, row.dinner];
+  for (let index = 0; index < fields.length; index += 1) {
+    const ageCategory = extractAgeCategory_(fields[index]);
+    if (ageCategory) return ageCategory;
+  }
+
+  return isValidAgeCategory_(row.age_category) ? row.age_category : '';
+}
+
+function extractAgeCategory_(value) {
+  const text = String(value || '');
+  const match = text.match(/(6 Bulan|7 Bulan|8 Bulan|9 Bulan|10 Bulan|11 Bulan|12 Bulan Ke Atas)/i);
+  if (!match) return '';
+
+  const found = AGE_CATEGORIES.find((ageCategory) => ageCategory.toLowerCase() === match[1].toLowerCase());
+  return found || '';
+}
+
+function isValidAgeCategory_(value) {
+  return AGE_CATEGORIES.some((ageCategory) => ageCategory === String(value || '').trim());
+}
+
+function isIsoDate_(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').trim());
 }
 
 function formatCell_(value) {

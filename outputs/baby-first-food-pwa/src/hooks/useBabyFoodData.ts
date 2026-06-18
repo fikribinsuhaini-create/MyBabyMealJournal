@@ -2,11 +2,19 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { appsScriptEnabled, bootstrapAppsScript, deleteAppsScriptRow, fetchAppsScriptData, seedAppsScriptData, upsertAppsScriptRow } from '../data/appsScript';
 import { createId, loadLocalData, replaceSheet, saveLocalData } from '../data/localStore';
 import type { AppData, SheetName, SyncState } from '../types';
+import { normalizeFeedingSchedule } from '../utils/schedule';
 
 type RowFor<T extends SheetName> = AppData[T][number];
 
 function hasAnyRows(data: Partial<AppData>) {
   return Object.values(data).some((rows) => Array.isArray(rows) && rows.length > 0);
+}
+
+function normalizeAppData(data: AppData): AppData {
+  return {
+    ...data,
+    FeedingSchedule: data.FeedingSchedule.map((row) => normalizeFeedingSchedule(row)),
+  };
 }
 
 function mergeRemoteData(local: AppData, remote: Partial<AppData>) {
@@ -26,7 +34,7 @@ function mergeRemoteData(local: AppData, remote: Partial<AppData>) {
         next.MenuPlanner = remoteRows as AppData['MenuPlanner'];
         break;
       case 'FeedingSchedule':
-        next.FeedingSchedule = remoteRows as AppData['FeedingSchedule'];
+        next.FeedingSchedule = (remoteRows as AppData['FeedingSchedule']).map((row) => normalizeFeedingSchedule(row));
         break;
       case 'Recipes':
         next.Recipes = remoteRows as AppData['Recipes'];
@@ -41,7 +49,7 @@ function mergeRemoteData(local: AppData, remote: Partial<AppData>) {
 }
 
 export function useBabyFoodData() {
-  const [data, setData] = useState<AppData>(() => loadLocalData());
+  const [data, setData] = useState<AppData>(() => normalizeAppData(loadLocalData()));
   const [syncState, setSyncState] = useState<SyncState>('local');
   const [syncMessage, setSyncMessage] = useState<string>('');
   const remoteEnabled = useMemo(() => appsScriptEnabled(), []);
@@ -62,15 +70,16 @@ export function useBabyFoodData() {
         return;
       }
 
-      const local = loadLocalData();
+      const local = normalizeAppData(loadLocalData());
       if (!hasAnyRows(remote) && hasAnyRows(local)) {
         await seedAppsScriptData(local);
         remote = await fetchAppsScriptData();
       }
 
       const next = mergeRemoteData(local, remote ?? {});
-      setData(next);
-      saveLocalData(next);
+      const normalized = normalizeAppData(next);
+      setData(normalized);
+      saveLocalData(normalized);
       setSyncState('synced');
     } catch {
       setSyncState('error');
@@ -83,8 +92,9 @@ export function useBabyFoodData() {
   }, [syncFromRemote]);
 
   const commit = useCallback((next: AppData) => {
-    setData(next);
-    saveLocalData(next);
+    const normalized = normalizeAppData(next);
+    setData(normalized);
+    saveLocalData(normalized);
   }, []);
 
   const upsert = useCallback(

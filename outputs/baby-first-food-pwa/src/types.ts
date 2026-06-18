@@ -20,9 +20,9 @@ export type MenuPlanner = {
   id: string;
   week: string;
   age_category: AgeCategory;
+  date: string;
   day: string;
   menu: string;
-  snack: string;
 };
 
 export type FeedingSchedule = {

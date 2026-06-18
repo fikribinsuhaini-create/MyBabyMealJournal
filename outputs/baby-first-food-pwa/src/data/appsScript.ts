@@ -75,6 +75,10 @@ async function postMutation(action: 'upsert' | 'delete' | 'seed', payload: Recor
   iframe.remove();
 }
 
+async function jsonpMutation<T>(action: 'upsert' | 'delete', payload: Record<string, string>) {
+  return jsonpRequest<T>({ action, ...payload });
+}
+
 export async function bootstrapAppsScript(): Promise<Partial<AppData> | null> {
   if (!scriptUrl) return null;
   const response = await jsonpRequest<Partial<AppData>>({ action: 'bootstrap' });
@@ -90,17 +94,34 @@ export async function fetchAppsScriptData(): Promise<Partial<AppData> | null> {
 }
 
 export async function upsertAppsScriptRow(sheet: SheetName, row: Record<string, string>) {
+  const rowString = JSON.stringify(row);
+  const hasLargeImagePayload = Object.values(row).some((value) => typeof value === 'string' && value.startsWith('data:image/'));
+
+  if (!hasLargeImagePayload && rowString.length < 5000) {
+    const response = await jsonpMutation<{ data?: unknown }>('upsert', {
+      sheet,
+      row: rowString,
+    });
+    if (!response?.ok) {
+      throw new Error('Apps Script save gagal');
+    }
+    return;
+  }
+
   await postMutation('upsert', {
     sheet,
-    row: JSON.stringify(row),
+    row: rowString,
   });
 }
 
 export async function deleteAppsScriptRow(sheet: SheetName, id: string) {
-  await postMutation('delete', {
+  const response = await jsonpMutation<{ data?: unknown }>('delete', {
     sheet,
     id,
   });
+  if (!response?.ok) {
+    throw new Error('Apps Script delete gagal');
+  }
 }
 
 export async function seedAppsScriptData(data: AppData) {

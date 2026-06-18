@@ -238,8 +238,23 @@ function validateSheet_(sheetName) {
 
 function getRequestPayload_(e) {
   const params = e && e.parameter ? e.parameter : {};
-  const body = e && e.postData && e.postData.contents ? parseJsonParameter_(e.postData.contents) : {};
+  const postData = e && e.postData ? e.postData : null;
+  const mimeType = String(postData && postData.type ? postData.type : '').toLowerCase();
+  const contents = postData && postData.contents ? String(postData.contents) : '';
 
+  if (!contents) {
+    return params;
+  }
+
+  const shouldParseBody =
+    mimeType.indexOf('application/json') >= 0 ||
+    mimeType.indexOf('text/plain') >= 0;
+
+  if (!shouldParseBody) {
+    return params;
+  }
+
+  const body = parseJsonParameter_(contents);
   if (body && typeof body === 'object' && !Array.isArray(body)) {
     return Object.assign({}, body, params);
   }

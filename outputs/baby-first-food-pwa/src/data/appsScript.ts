@@ -158,6 +158,14 @@ export async function upsertAppsScriptRow(sheet: SheetName, row: Record<string, 
     return;
   }
 
+  if (hasLargeImagePayload) {
+    await postMutation('upsert', {
+      sheet,
+      row: rowString,
+    }, 'iframe');
+    return;
+  }
+
   await postMutation('upsert', {
     sheet,
     row: rowString,

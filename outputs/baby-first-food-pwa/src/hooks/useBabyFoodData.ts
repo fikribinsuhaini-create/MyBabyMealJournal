@@ -6,6 +6,10 @@ import { normalizeFeedingSchedule } from '../utils/schedule';
 
 type RowFor<T extends SheetName> = AppData[T][number];
 
+function wait(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
 function hasAnyRows(data: Partial<AppData>) {
   return Object.values(data).some((rows) => Array.isArray(rows) && rows.length > 0);
 }
@@ -98,6 +102,22 @@ export function useBabyFoodData() {
     saveLocalData(normalized);
   }, []);
 
+  const waitForRemoteRows = useCallback(
+    async <T extends SheetName>(sheet: T, matcher: (rows: RowFor<T>[]) => boolean) => {
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        const remote = await fetchAppsScriptData();
+        const remoteRows = (remote?.[sheet] ?? []) as RowFor<T>[];
+        if (matcher(remoteRows)) {
+          return remote;
+        }
+        await wait(1200);
+      }
+
+      return null;
+    },
+    []
+  );
+
   const upsert = useCallback(
     async <T extends SheetName>(sheet: T, row: Omit<RowFor<T>, 'id'> & { id?: string }) => {
       const id = row.id || createId(sheet.toLowerCase());
@@ -137,11 +157,12 @@ export function useBabyFoodData() {
         setSyncMessage('');
         setSyncState('syncing');
         await upsertAppsScriptRow(sheet, savedRow as Record<string, string>);
-        const remote = await fetchAppsScriptData();
+        const remote =
+          (await waitForRemoteRows(sheet, (remoteRows) => remoteRows.some((item) => item.id === id))) ??
+          (await fetchAppsScriptData());
         const remoteRows = (remote?.[sheet] ?? []) as RowFor<T>[];
-        const existsInRemote = remoteRows.some((item) => item.id === id);
-        if (!existsInRemote) {
-          throw new Error('Apps Script save tak sampai ke Google Sheet');
+        if (!remoteRows.some((item) => item.id === id)) {
+          throw new Error('Apps Script save tak sampai ke Google Sheet. Cuba redeploy Apps Script atau kecilkan gambar lagi.');
         }
         if (remote) {
           commit(mergeRemoteData(next, remote));
@@ -154,7 +175,7 @@ export function useBabyFoodData() {
         setSyncMessage(`Save ke Apps Script gagal: ${message}`);
       }
     },
-    [commit, data, remoteEnabled]
+    [commit, data, remoteEnabled, waitForRemoteRows]
   );
 
   const remove = useCallback(

@@ -49,18 +49,18 @@ async function postMutation(action: 'upsert' | 'delete' | 'seed', payload: Recor
   if (!scriptUrl) return;
 
   if (mode === 'auto') {
+    const formData = new FormData();
+    formData.append('action', action);
+    Object.entries(payload).forEach(([key, value]) => {
+      formData.append(key, value);
+    });
+
     try {
       await Promise.race([
         fetch(scriptUrl, {
           method: 'POST',
           mode: 'no-cors',
-          headers: {
-            'Content-Type': 'text/plain;charset=UTF-8',
-          },
-          body: JSON.stringify({
-            action,
-            ...payload,
-          }),
+          body: formData,
         }),
         wait(4000),
       ]);
@@ -81,13 +81,14 @@ async function postMutation(action: 'upsert' | 'delete' | 'seed', payload: Recor
   form.method = 'POST';
   form.action = scriptUrl;
   form.target = frameName;
+  form.enctype = 'multipart/form-data';
 
   const entries = { action, ...payload };
   Object.entries(entries).forEach(([key, value]) => {
     const input = document.createElement('input');
     input.type = 'hidden';
     input.name = key;
-    input.value = key === 'row' || key === 'data' ? encodeURIComponent(value) : value;
+    input.value = value;
     form.appendChild(input);
   });
 

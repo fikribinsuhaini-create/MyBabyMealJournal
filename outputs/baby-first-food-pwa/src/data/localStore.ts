@@ -1,7 +1,7 @@
 import { sampleData } from './sampleData';
 import type { AppData, SheetName } from '../types';
 
-const STORAGE_KEY = 'baby-first-food-data-v2';
+const STORAGE_KEY = 'baby-first-food-data-v3';
 
 export function createId(prefix: string) {
   return `${prefix}-${crypto.randomUUID()}`;

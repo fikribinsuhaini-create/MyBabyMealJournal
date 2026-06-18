@@ -48,6 +48,30 @@ async function jsonpRequest<T>(params: Record<string, string>) {
 async function postMutation(action: 'upsert' | 'delete' | 'seed', payload: Record<string, string>) {
   if (!scriptUrl) return;
 
+  const body = new URLSearchParams();
+  body.set('action', action);
+  Object.entries(payload).forEach(([key, value]) => {
+    body.set(key, key === 'row' || key === 'data' ? encodeURIComponent(value) : value);
+  });
+
+  try {
+    await Promise.race([
+      fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        },
+        body: body.toString(),
+      }),
+      wait(4000),
+    ]);
+    await wait(250);
+    return;
+  } catch (error) {
+    // Fallback for environments where cross-origin fetch to Apps Script is blocked.
+  }
+
   const frameName = `babyFoodPost_${crypto.randomUUID().replace(/-/g, '')}`;
   const iframe = document.createElement('iframe');
   iframe.name = frameName;

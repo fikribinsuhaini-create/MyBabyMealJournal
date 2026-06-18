@@ -22,7 +22,7 @@ function mergeRemoteData(local: AppData, remote: Partial<AppData>) {
 
   (Object.keys(local) as SheetName[]).forEach((sheet) => {
     const remoteRows = remote[sheet];
-    if (!Array.isArray(remoteRows) || remoteRows.length === 0) {
+    if (!Array.isArray(remoteRows)) {
       return;
     }
 

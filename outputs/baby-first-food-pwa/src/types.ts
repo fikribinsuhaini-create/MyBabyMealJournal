@@ -54,6 +54,7 @@ export type FoodTracker = {
   status: FoodStatus;
   reaction: Reaction;
   notes: string;
+  image_url: string;
 };
 
 export type SheetName = 'BabyProfile' | 'MenuPlanner' | 'FeedingSchedule' | 'Recipes' | 'FoodTracker';

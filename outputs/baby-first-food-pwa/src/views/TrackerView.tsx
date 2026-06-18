@@ -144,6 +144,12 @@ export function TrackerView({
               {row.notes ? <Pill tone="sage">Ada catatan</Pill> : null}
             </div>
 
+            {row.image_url ? (
+              <div className="mt-4 overflow-hidden rounded-[20px] bg-cream">
+                <img src={row.image_url} alt={row.food_name} className="h-52 w-full object-cover" />
+              </div>
+            ) : null}
+
             {row.notes ? (
               <div className="mt-4 rounded-[18px] bg-cream px-4 py-3">
                 <p className="text-xs font-bold uppercase tracking-[0.12em] text-cocoa/50">Diari Harian</p>
@@ -165,6 +171,7 @@ export function TrackerView({
             { name: 'status', label: 'Status', type: 'select', options: foodStatuses },
             { name: 'reaction', label: 'Reaksi', type: 'select', options: reactions },
             { name: 'notes', label: 'Nota', type: 'textarea' },
+            { name: 'image_url', label: 'Gambar', type: 'image' },
           ]}
           initialValues={{ ...(activeRecord as Record<string, string>), introduced_date: toDateInputValue(activeRecord.introduced_date || '') }}
           onClose={() => {

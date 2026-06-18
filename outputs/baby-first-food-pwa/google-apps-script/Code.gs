@@ -1,11 +1,12 @@
 const SPREADSHEET_ID = '1Pudo5y5GyTxQalhXAC1KELEqFZ_FtVMXkU95mK3HQ8k';
+const IMAGE_FOLDER_PROPERTY = 'TRACKER_IMAGE_FOLDER_ID';
 
 const SHEETS = {
   BabyProfile: ['id', 'baby_name', 'birth_date'],
   MenuPlanner: ['id', 'week', 'age_category', 'day', 'menu'],
   FeedingSchedule: ['id', 'week', 'age_category', 'date', 'day', 'breakfast', 'lunch', 'evening', 'dinner'],
   Recipes: ['id', 'title', 'image_url', 'age_category', 'category', 'ingredients', 'instructions', 'notes'],
-  FoodTracker: ['id', 'food_name', 'introduced_date', 'status', 'reaction', 'notes'],
+  FoodTracker: ['id', 'food_name', 'introduced_date', 'status', 'reaction', 'notes', 'image_url'],
 };
 
 const AGE_CATEGORIES = ['6 Bulan', '7 Bulan', '8 Bulan', '9 Bulan', '10 Bulan', '11 Bulan', '12 Bulan Ke Atas'];
@@ -160,7 +161,11 @@ function upsertRow_(sheetName, row) {
   const id = String(row.id || '').trim();
   if (!id) throw new Error('Missing row id');
 
-  const normalizedRow = sheetName === 'FeedingSchedule' ? normalizeFeedingScheduleRow_(row) : row;
+  const normalizedRow = sheetName === 'FeedingSchedule'
+    ? normalizeFeedingScheduleRow_(row)
+    : sheetName === 'FoodTracker'
+      ? normalizeFoodTrackerRow_(row)
+      : row;
   const values = headers.map((header) => normalizedRow[header] === null || normalizedRow[header] === undefined ? '' : String(normalizedRow[header]));
   const dataRowCount = sheet.getLastRow() - 1;
   const ids = dataRowCount > 0 ? sheet.getRange(2, 1, dataRowCount, 1).getValues().flat() : [];
@@ -219,6 +224,39 @@ function normalizeFeedingScheduleRow_(row) {
   return next;
 }
 
+function normalizeFoodTrackerRow_(row) {
+  const next = Object.assign({}, row);
+  if (looksLikeDataUrl_(next.image_url)) {
+    next.image_url = storeTrackerImage_(next.image_url, next.food_name);
+  }
+  return next;
+}
+
+function storeTrackerImage_(dataUrl, foodName) {
+  const match = String(dataUrl || '').match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+  if (!match) return String(dataUrl || '');
+
+  const mimeType = match[1];
+  const base64 = match[2];
+  const bytes = Utilities.base64Decode(base64);
+  const safeName = String(foodName || 'baby-food').trim().replace(/[^\w\-]+/g, '-').replace(/^-+|-+$/g, '').toLowerCase() || 'baby-food';
+  const extension = mimeType.split('/')[1] || 'jpg';
+  const blob = Utilities.newBlob(bytes, mimeType, `${safeName}.${extension}`);
+  const folder = getTrackerImageFolder_();
+  const file = folder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return `https://drive.google.com/uc?export=view&id=${file.getId()}`;
+}
+
+function getTrackerImageFolder_() {
+  const folderId = PropertiesService.getScriptProperties().getProperty(IMAGE_FOLDER_PROPERTY);
+  if (folderId) {
+    return DriveApp.getFolderById(folderId);
+  }
+
+  return DriveApp.getRootFolder();
+}
+
 function inferAgeCategory_(row) {
   const fields = [row.breakfast, row.lunch, row.evening, row.dinner];
   for (let index = 0; index < fields.length; index += 1) {
@@ -244,6 +282,10 @@ function isValidAgeCategory_(value) {
 
 function isIsoDate_(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').trim());
+}
+
+function looksLikeDataUrl_(value) {
+  return /^data:image\//.test(String(value || '').trim());
 }
 
 function formatCell_(value) {

@@ -1,5 +1,6 @@
 const SPREADSHEET_ID = '1Pudo5y5GyTxQalhXAC1KELEqFZ_FtVMXkU95mK3HQ8k';
-const IMAGE_FOLDER_PROPERTY = '1E09YtnyIMt_BJzUHQUGgPPP27xeV3XKF';
+const TRACKER_IMAGE_FOLDER_ID = '1E09YtnyIMt_BJzUHQUGgPPP27xeV3XKF';
+const TRACKER_IMAGE_FOLDER_PROPERTY = 'TRACKER_IMAGE_FOLDER_ID';
 
 const SHEETS = {
   BabyProfile: ['id', 'baby_name', 'birth_date'],
@@ -339,11 +340,14 @@ function storeTrackerImage_(dataUrl, foodName) {
   const folder = getTrackerImageFolder_();
   const file = folder.createFile(blob);
   file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  return `https://drive.google.com/uc?export=view&id=${file.getId()}`;
+  return `https://drive.google.com/thumbnail?id=${file.getId()}&sz=w1200`;
 }
 
 function getTrackerImageFolder_() {
-  const folderId = PropertiesService.getScriptProperties().getProperty(IMAGE_FOLDER_PROPERTY);
+  const folderId =
+    PropertiesService.getScriptProperties().getProperty(TRACKER_IMAGE_FOLDER_PROPERTY) ||
+    TRACKER_IMAGE_FOLDER_ID;
+
   if (folderId) {
     return DriveApp.getFolderById(folderId);
   }

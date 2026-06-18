@@ -71,14 +71,20 @@ async function postMutation(action: 'upsert' | 'delete' | 'seed', payload: Recor
   document.body.appendChild(form);
   let readyForResponse = false;
   const loadPromise = new Promise<void>((resolve) => {
-    const timeoutId = window.setTimeout(() => resolve(), 15000);
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      resolve();
+    };
+    const timeoutId = window.setTimeout(finish, 3000);
     iframe.addEventListener(
       'load',
       () => {
         if (!readyForResponse) return;
         window.setTimeout(() => {
           window.clearTimeout(timeoutId);
-          resolve();
+          finish();
         }, 300);
       },
       { once: true }
@@ -90,7 +96,7 @@ async function postMutation(action: 'upsert' | 'delete' | 'seed', payload: Recor
   }, 200);
   form.submit();
   await loadPromise;
-  await wait(500);
+  await wait(250);
   form.remove();
   iframe.remove();
 }

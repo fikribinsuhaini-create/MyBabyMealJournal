@@ -1,17 +1,17 @@
-import { Baby, BookOpen, CalendarDays, ClipboardList, Home, Utensils } from 'lucide-react';
+import { Baby, CalendarDays, ClipboardList, GalleryVerticalEnd, Home, Utensils } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { SyncState } from '../types';
 import type { AppData } from '../types';
 import { calculateAge } from '../utils/date';
 
-export type TabKey = 'dashboard' | 'menu' | 'schedule' | 'recipes' | 'tracker';
+export type TabKey = 'dashboard' | 'menu' | 'schedule' | 'tracker' | 'gallery';
 
 const navItems: Array<{ key: TabKey; label: string; icon: typeof Home }> = [
   { key: 'dashboard', label: 'Dashboard', icon: Home },
   { key: 'menu', label: 'Menu', icon: Utensils },
   { key: 'schedule', label: 'Jadual', icon: CalendarDays },
-  { key: 'recipes', label: 'Resepi', icon: BookOpen },
   { key: 'tracker', label: 'Tracker', icon: ClipboardList },
+  { key: 'gallery', label: 'Gallery', icon: GalleryVerticalEnd },
 ];
 
 const syncText: Record<SyncState, string> = {

@@ -3,13 +3,22 @@ export function calculateAge(birthDate: string) {
   const now = new Date();
   if (!birth) return '-';
 
-  let months = (now.getFullYear() - birth.getFullYear()) * 12 + now.getMonth() - birth.getMonth();
-  if (now.getDate() < birth.getDate()) months -= 1;
+  let months = getMonthsBetweenDates(birth, now);
   const years = Math.floor(months / 12);
   const remainingMonths = months % 12;
 
   if (years <= 0) return `${Math.max(remainingMonths, 0)} bulan`;
   return `${years} tahun ${remainingMonths} bulan`;
+}
+
+export function getMonthsBetweenDates(fromDate: string | Date, toDate: string | Date) {
+  const from = typeof fromDate === 'string' ? parseDate(fromDate) : fromDate;
+  const to = typeof toDate === 'string' ? parseDate(toDate) : toDate;
+  if (!from || !to) return 0;
+
+  let months = (to.getFullYear() - from.getFullYear()) * 12 + to.getMonth() - from.getMonth();
+  if (to.getDate() < from.getDate()) months -= 1;
+  return Math.max(months, 0);
 }
 
 export function todayIso() {

@@ -21,14 +21,15 @@ export function DashboardView({
   const todayDate = formatDisplayDate(todayIso());
   const schedule = data.FeedingSchedule.find((item) => item.date === todayIso()) ?? null;
   const reactionCount = data.FoodTracker.filter((item) => item.reaction && item.reaction !== 'Belum Dinilai').length;
+  const galleryCount = data.FoodTracker.filter((item) => item.image_url).length;
 
   const stats = useMemo(
     () => [
-      ['Resepi', data.Recipes.length.toString()],
+      ['Gallery', galleryCount.toString()],
       ['Makanan', data.FoodTracker.length.toString()],
       ['Reaksi', reactionCount.toString()],
     ],
-    [data.Recipes.length, data.FoodTracker.length, reactionCount]
+    [galleryCount, data.FoodTracker.length, reactionCount]
   );
 
   return (

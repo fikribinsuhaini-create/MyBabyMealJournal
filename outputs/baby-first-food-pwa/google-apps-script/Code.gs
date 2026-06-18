@@ -61,6 +61,11 @@ function doPost(e) {
     const payload = getRequestPayload_(e);
     const action = String(payload.action || '').trim();
 
+    if (action === 'uploadTrackerImage') {
+      const imageUrl = storeTrackerImage_(payload.image_data, payload.food_name);
+      return respond_(e, true, { data: { image_url: imageUrl } });
+    }
+
     if (action === 'upsert') {
       const sheetName = payload.sheet;
       const row = parseJsonParameter_(payload.row);
@@ -401,9 +406,19 @@ function formatCell_(value) {
 function respond_(e, ok, payload) {
   const response = JSON.stringify({ ok, ...payload });
   const callback = e && e.parameter ? e.parameter.callback : '';
+  const transport = e && e.parameter ? String(e.parameter.transport || '') : '';
 
   if (callback) {
     return ContentService.createTextOutput(`${callback}(${response})`).setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+
+  if (transport === 'iframe') {
+    const html = HtmlService.createHtmlOutput(
+      `<script>
+        window.parent.postMessage(${JSON.stringify({ source: 'baby-food-apps-script', payload: JSON.parse(response) })}, '*');
+      </script>`
+    );
+    return html;
   }
 
   return ContentService.createTextOutput(response).setMimeType(ContentService.MimeType.JSON);

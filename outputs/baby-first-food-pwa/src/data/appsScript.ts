@@ -9,6 +9,10 @@ type AppsScriptResponse<T> = {
 };
 
 type JsonpWindow = Window & typeof globalThis & Record<string, unknown>;
+type IframeMessageData<T> = {
+  source?: string;
+  payload?: AppsScriptResponse<T>;
+};
 
 function wait(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -125,6 +129,67 @@ async function postMutation(action: 'upsert' | 'delete' | 'seed', payload: Recor
   iframe.remove();
 }
 
+async function postIframeMessage<T>(action: string, payload: Record<string, string>) {
+  if (!scriptUrl) return null;
+
+  const frameName = `babyFoodPost_${crypto.randomUUID().replace(/-/g, '')}`;
+  const iframe = document.createElement('iframe');
+  iframe.name = frameName;
+  iframe.style.display = 'none';
+  document.body.appendChild(iframe);
+
+  const form = document.createElement('form');
+  form.method = 'POST';
+  form.action = scriptUrl;
+  form.target = frameName;
+  form.enctype = 'multipart/form-data';
+
+  const entries = { action, transport: 'iframe', ...payload };
+  Object.entries(entries).forEach(([key, value]) => {
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = key;
+    input.value = value;
+    form.appendChild(input);
+  });
+
+  document.body.appendChild(form);
+
+  return new Promise<AppsScriptResponse<T>>((resolve, reject) => {
+    let settled = false;
+    const cleanup = () => {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener('message', handleMessage);
+      form.remove();
+      iframe.remove();
+    };
+
+    const handleMessage = (event: MessageEvent<IframeMessageData<T>>) => {
+      if (event.data?.source !== 'baby-food-apps-script' || !event.data.payload) {
+        return;
+      }
+
+      const payloadResponse = event.data.payload;
+      cleanup();
+      resolve(payloadResponse);
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    window.setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      window.removeEventListener('message', handleMessage);
+      form.remove();
+      iframe.remove();
+      reject(new Error('Apps Script iframe upload timeout'));
+    }, 20000);
+
+    form.submit();
+  });
+}
+
 async function jsonpMutation<T>(action: 'upsert' | 'delete', payload: Record<string, string>) {
   return jsonpRequest<T>({ action, ...payload });
 }
@@ -180,6 +245,19 @@ export async function deleteAppsScriptRow(sheet: SheetName, id: string) {
   if (!response?.ok) {
     throw new Error('Apps Script delete gagal');
   }
+}
+
+export async function uploadTrackerImage(imageData: string, foodName: string) {
+  const response = await postIframeMessage<{ image_url: string }>('uploadTrackerImage', {
+    image_data: imageData,
+    food_name: foodName,
+  });
+
+  if (!response?.ok || !response.data?.image_url) {
+    throw new Error(response?.message || 'Upload gambar gagal');
+  }
+
+  return response.data.image_url;
 }
 
 export async function seedAppsScriptData(data: AppData) {

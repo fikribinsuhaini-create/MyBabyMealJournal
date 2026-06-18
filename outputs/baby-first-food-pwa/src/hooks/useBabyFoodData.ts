@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { appsScriptEnabled, bootstrapAppsScript, deleteAppsScriptRow, fetchAppsScriptData, seedAppsScriptData, upsertAppsScriptRow } from '../data/appsScript';
+import { appsScriptEnabled, bootstrapAppsScript, deleteAppsScriptRow, fetchAppsScriptData, seedAppsScriptData, upsertAppsScriptRow, uploadTrackerImage } from '../data/appsScript';
 import { createId, loadLocalData, replaceSheet, saveLocalData } from '../data/localStore';
 import type { AppData, SheetName, SyncState } from '../types';
 import { normalizeFeedingSchedule } from '../utils/schedule';
@@ -156,60 +156,64 @@ export function useBabyFoodData() {
         commit(replaceSheet(data, sheet, nextRows));
         setSyncState('error');
         setSyncMessage('Gambar resepi terlalu besar. Kecilkan gambar atau guna URL pendek.');
-        return;
+        return false;
       }
 
       if (trackerRow && typeof trackerRow.image_url === 'string' && trackerRow.image_url.length > 50000) {
         setSyncState('error');
         setSyncMessage('Gambar tracker terlalu besar. Pilih gambar lebih kecil.');
-        return;
+        return false;
+      }
+
+      let finalRow = savedRow;
+
+      if (remoteEnabled && trackerRow && typeof trackerRow.image_url === 'string' && trackerRow.image_url.startsWith('data:image/')) {
+        try {
+          setSyncMessage('');
+          setSyncState('syncing');
+          const imageUrl = await uploadTrackerImage(trackerRow.image_url, trackerRow.food_name);
+          finalRow = { ...savedRow, image_url: imageUrl } as RowFor<T>;
+        } catch (error) {
+          setSyncState('error');
+          const message = error instanceof Error ? error.message : String(error);
+          setSyncMessage(`Upload gambar gagal: ${message}`);
+          return false;
+        }
       }
 
       const exists = rows.some((item) => item.id === id);
-      const nextRows = exists ? rows.map((item) => (item.id === id ? savedRow : item)) : [savedRow, ...rows];
+      const nextRows = exists ? rows.map((item) => (item.id === id ? finalRow : item)) : [finalRow, ...rows];
       const next = replaceSheet(data, sheet, nextRows);
       commit(next);
 
       if (!remoteEnabled) {
         setSyncState(navigator.onLine ? 'local' : 'offline');
-        return;
+        return true;
       }
 
       try {
         setSyncMessage('');
         setSyncState('syncing');
-        await upsertAppsScriptRow(sheet, savedRow as Record<string, string>);
+        await upsertAppsScriptRow(sheet, finalRow as Record<string, string>);
         let remote =
-          (await waitForRemoteRows(sheet, (remoteRows) => remoteRows.some((item) => rowMatchesRemote(sheet, savedRow, item)))) ??
+          (await waitForRemoteRows(sheet, (remoteRows) => remoteRows.some((item) => rowMatchesRemote(sheet, finalRow, item)))) ??
           (await fetchAppsScriptData());
-        let remoteRows = (remote?.[sheet] ?? []) as RowFor<T>[];
+        const remoteRows = (remote?.[sheet] ?? []) as RowFor<T>[];
 
-        const needsImageRetry =
-          sheet === 'FoodTracker' &&
-          typeof (savedRow as RowFor<'FoodTracker'>).image_url === 'string' &&
-          (savedRow as RowFor<'FoodTracker'>).image_url.startsWith('data:image/') &&
-          !remoteRows.some((item) => rowMatchesRemote(sheet, savedRow, item));
-
-        if (needsImageRetry) {
-          await upsertAppsScriptRow(sheet, savedRow as Record<string, string>, 'iframe');
-          remote =
-            (await waitForRemoteRows(sheet, (nextRows) => nextRows.some((item) => rowMatchesRemote(sheet, savedRow, item)))) ??
-            (await fetchAppsScriptData());
-          remoteRows = (remote?.[sheet] ?? []) as RowFor<T>[];
-        }
-
-        if (!remoteRows.some((item) => rowMatchesRemote(sheet, savedRow, item))) {
+        if (!remoteRows.some((item) => rowMatchesRemote(sheet, finalRow, item))) {
           throw new Error('Apps Script save tak sampai ke Google Sheet. Cuba redeploy Apps Script atau kecilkan gambar lagi.');
         }
         if (remote) {
           commit(mergeRemoteData(next, remote));
         }
         setSyncState('synced');
+        return true;
       } catch (error) {
         commit(data);
         setSyncState('error');
         const message = error instanceof Error ? error.message : String(error);
         setSyncMessage(`Save ke Apps Script gagal: ${message}`);
+        return false;
       }
     },
     [commit, data, remoteEnabled, waitForRemoteRows]

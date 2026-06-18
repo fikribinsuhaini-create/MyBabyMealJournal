@@ -32,7 +32,7 @@ export function TrackerView({
 }: {
   rows: FoodTracker[];
   menuRows: MenuPlanner[];
-  upsert: (row: FoodTracker) => Promise<void>;
+  upsert: (row: FoodTracker) => Promise<boolean>;
   remove: (id: string) => Promise<void>;
 }) {
   const [editing, setEditing] = useState<FoodTracker | null>(null);
@@ -230,8 +230,9 @@ export function TrackerView({
             setAdding(false);
             setPrefill(null);
           }}
-          onSubmit={(values) => {
-            void upsert({ id: editing?.id ?? '', ...values } as FoodTracker);
+          onSubmit={async (values) => {
+            const saved = await upsert({ id: editing?.id ?? '', ...values } as FoodTracker);
+            if (!saved) return;
             setEditing(null);
             setAdding(false);
             setPrefill(null);

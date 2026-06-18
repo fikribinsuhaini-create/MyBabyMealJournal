@@ -1,9 +1,9 @@
 const SPREADSHEET_ID = '1Pudo5y5GyTxQalhXAC1KELEqFZ_FtVMXkU95mK3HQ8k';
-const IMAGE_FOLDER_PROPERTY = 'TRACKER_IMAGE_FOLDER_ID';
+const IMAGE_FOLDER_PROPERTY = '1E09YtnyIMt_BJzUHQUGgPPP27xeV3XKF';
 
 const SHEETS = {
   BabyProfile: ['id', 'baby_name', 'birth_date'],
-  MenuPlanner: ['id', 'week', 'age_category', 'day', 'menu'],
+  MenuPlanner: ['id', 'week', 'age_category', 'day', 'menu', 'snack'],
   FeedingSchedule: ['id', 'week', 'age_category', 'date', 'day', 'breakfast', 'lunch', 'evening', 'dinner'],
   Recipes: ['id', 'title', 'image_url', 'age_category', 'category', 'ingredients', 'instructions', 'notes'],
   FoodTracker: ['id', 'food_name', 'introduced_date', 'status', 'reaction', 'notes', 'image_url'],

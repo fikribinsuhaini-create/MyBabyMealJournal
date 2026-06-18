@@ -22,6 +22,7 @@ export type MenuPlanner = {
   age_category: AgeCategory;
   day: string;
   menu: string;
+  snack: string;
 };
 
 export type FeedingSchedule = {

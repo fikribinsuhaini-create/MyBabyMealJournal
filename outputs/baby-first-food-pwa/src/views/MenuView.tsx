@@ -38,7 +38,7 @@ export function MenuView({
     const query = search.toLowerCase();
     return rows
       .filter((row) => row.age_category === activeAge)
-      .filter((row) => [row.week, row.age_category, row.day, row.menu].join(' ').toLowerCase().includes(query))
+      .filter((row) => [row.week, row.age_category, row.day, row.menu, row.snack].join(' ').toLowerCase().includes(query))
       .sort((left, right) => {
         const weekCompare = weeks.indexOf(left.week) - weeks.indexOf(right.week);
         if (weekCompare !== 0) return weekCompare;
@@ -126,6 +126,12 @@ export function MenuView({
                       <div className="min-w-0 flex-1">
                         <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cocoa/50">{row.day}</p>
                         <p className="mt-1 break-words text-base font-bold leading-tight text-cocoa">{row.menu}</p>
+                        {row.snack ? (
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <span className="rounded-full bg-sage/18 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-sageDeep">Snek</span>
+                            <p className="text-sm font-semibold text-cocoa/70">{row.snack}</p>
+                          </div>
+                        ) : null}
                       </div>
 
                       <div className="flex gap-2">
@@ -155,6 +161,7 @@ export function MenuView({
             { name: 'age_category', label: 'Kategori Umur', type: 'select', options: ageCategories },
             { name: 'day', label: 'Hari', type: 'select', options: menuDays },
             { name: 'menu', label: 'Menu / Makanan' },
+            { name: 'snack', label: 'Snek / Extra', placeholder: 'Contoh: Buah potong' },
           ]}
           initialValues={activeRecord as Record<string, string>}
           onClose={() => {

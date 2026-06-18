@@ -37,7 +37,7 @@ async function jsonpRequest<T>(params: Record<string, string>) {
 
     script.onerror = () => {
       cleanup();
-      reject(new Error('Apps Script JSONP failed'));
+      reject(new Error(`Apps Script JSONP failed: ${url.toString()}`));
     };
 
     script.src = url.toString();

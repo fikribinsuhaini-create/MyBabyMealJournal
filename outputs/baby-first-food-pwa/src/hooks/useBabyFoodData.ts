@@ -81,9 +81,10 @@ export function useBabyFoodData() {
       setData(normalized);
       saveLocalData(normalized);
       setSyncState('synced');
-    } catch {
+    } catch (error) {
       setSyncState('error');
-      setSyncMessage('Sync awal gagal. Check deploy Apps Script / URL exec.');
+      const message = error instanceof Error ? error.message : String(error);
+      setSyncMessage(`Sync awal gagal: ${message}`);
     }
   }, [remoteEnabled]);
 
@@ -136,9 +137,10 @@ export function useBabyFoodData() {
           throw new Error('Apps Script save tak sampai ke Google Sheet');
         }
         setSyncState('synced');
-      } catch {
+      } catch (error) {
         setSyncState('error');
-        setSyncMessage('Save ke Apps Script gagal. Redeploy latest version.');
+        const message = error instanceof Error ? error.message : String(error);
+        setSyncMessage(`Save ke Apps Script gagal: ${message}`);
       }
     },
     [commit, data, remoteEnabled]
@@ -170,9 +172,10 @@ export function useBabyFoodData() {
           throw new Error('Apps Script delete tak sampai ke Google Sheet');
         }
         setSyncState('synced');
-      } catch {
+      } catch (error) {
         setSyncState('error');
-        setSyncMessage('Delete ke Apps Script gagal. Redeploy latest version.');
+        const message = error instanceof Error ? error.message : String(error);
+        setSyncMessage(`Delete ke Apps Script gagal: ${message}`);
       }
     },
     [commit, data, remoteEnabled]

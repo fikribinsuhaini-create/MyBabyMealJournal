@@ -28,7 +28,7 @@ function doGet(e) {
     if (action === 'upsert') {
       ensureSheets_();
       const sheetName = e.parameter.sheet;
-      const row = JSON.parse(e.parameter.row || '{}');
+      const row = parseJsonParameter_(e.parameter.row);
       upsertRow_(sheetName, row);
       return respond_(e, true, { data: readAll_() });
     }
@@ -43,7 +43,7 @@ function doGet(e) {
 
     if (action === 'seed') {
       ensureSheets_();
-      const data = JSON.parse(e.parameter.data || '{}');
+      const data = parseJsonParameter_(e.parameter.data);
       seedData_(data);
       return respond_(e, true, { data: readAll_() });
     }
@@ -61,7 +61,7 @@ function doPost(e) {
 
     if (action === 'upsert') {
       const sheetName = e.parameter.sheet;
-      const row = JSON.parse(e.parameter.row || '{}');
+      const row = parseJsonParameter_(e.parameter.row);
       upsertRow_(sheetName, row);
       return respond_(e, true, { data: readAll_() });
     }
@@ -74,7 +74,7 @@ function doPost(e) {
     }
 
     if (action === 'seed') {
-      const data = JSON.parse(e.parameter.data || '{}');
+      const data = parseJsonParameter_(e.parameter.data);
       seedData_(data);
       return respond_(e, true, { data: readAll_() });
     }
@@ -233,6 +233,16 @@ function seedData_(data) {
 
 function validateSheet_(sheetName) {
   if (!SHEETS[sheetName]) throw new Error('Invalid sheet name');
+}
+
+function parseJsonParameter_(value) {
+  const raw = String(value || '{}');
+
+  try {
+    return JSON.parse(raw);
+  } catch (error) {
+    return JSON.parse(decodeURIComponent(raw));
+  }
 }
 
 function normalizeMenuPlannerRow_(row) {

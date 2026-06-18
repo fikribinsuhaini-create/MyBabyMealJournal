@@ -64,7 +64,7 @@ async function postMutation(action: 'upsert' | 'delete' | 'seed', payload: Recor
     const input = document.createElement('input');
     input.type = 'hidden';
     input.name = key;
-    input.value = value;
+    input.value = key === 'row' || key === 'data' ? encodeURIComponent(value) : value;
     form.appendChild(input);
   });
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { appsScriptEnabled, bootstrapAppsScript, deleteAppsScriptRow, fetchAppsScriptData, seedAppsScriptData, upsertAppsScriptRow, uploadTrackerImage } from '../data/appsScript';
+import { appsScriptEnabled, bootstrapAppsScript, deleteAppsScriptRow, fetchAppsScriptData, seedAppsScriptData, upsertAppsScriptRow } from '../data/appsScript';
 import { createId, loadLocalData, replaceSheet, saveLocalData } from '../data/localStore';
 import type { AppData, SheetName, SyncState } from '../types';
 import { normalizeFeedingSchedule } from '../utils/schedule';
@@ -125,14 +125,14 @@ export function useBabyFoodData() {
   }, []);
 
   const waitForRemoteRows = useCallback(
-    async <T extends SheetName>(sheet: T, matcher: (rows: RowFor<T>[]) => boolean) => {
-      for (let attempt = 0; attempt < 12; attempt += 1) {
+    async <T extends SheetName>(sheet: T, matcher: (rows: RowFor<T>[]) => boolean, maxAttempts = 12) => {
+      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
         const remote = await fetchAppsScriptData();
         const remoteRows = (remote?.[sheet] ?? []) as RowFor<T>[];
         if (matcher(remoteRows)) {
           return remote;
         }
-        await wait(1200);
+        await wait(1500);
       }
 
       return null;
@@ -165,21 +165,7 @@ export function useBabyFoodData() {
         return false;
       }
 
-      let finalRow = savedRow;
-
-      if (remoteEnabled && trackerRow && typeof trackerRow.image_url === 'string' && trackerRow.image_url.startsWith('data:image/')) {
-        try {
-          setSyncMessage('');
-          setSyncState('syncing');
-          const imageUrl = await uploadTrackerImage(trackerRow.image_url, trackerRow.food_name);
-          finalRow = { ...savedRow, image_url: imageUrl } as RowFor<T>;
-        } catch (error) {
-          setSyncState('error');
-          const message = error instanceof Error ? error.message : String(error);
-          setSyncMessage(`Upload gambar gagal: ${message}`);
-          return false;
-        }
-      }
+      const finalRow = savedRow;
 
       const exists = rows.some((item) => item.id === id);
       const nextRows = exists ? rows.map((item) => (item.id === id ? finalRow : item)) : [finalRow, ...rows];
@@ -195,8 +181,14 @@ export function useBabyFoodData() {
         setSyncMessage('');
         setSyncState('syncing');
         await upsertAppsScriptRow(sheet, finalRow as Record<string, string>);
+        const pollAttempts =
+          sheet === 'FoodTracker' &&
+          typeof (finalRow as RowFor<'FoodTracker'>).image_url === 'string' &&
+          (finalRow as RowFor<'FoodTracker'>).image_url.startsWith('data:image/')
+            ? 20
+            : 12;
         let remote =
-          (await waitForRemoteRows(sheet, (remoteRows) => remoteRows.some((item) => rowMatchesRemote(sheet, finalRow, item)))) ??
+          (await waitForRemoteRows(sheet, (remoteRows) => remoteRows.some((item) => rowMatchesRemote(sheet, finalRow, item)), pollAttempts)) ??
           (await fetchAppsScriptData());
         const remoteRows = (remote?.[sheet] ?? []) as RowFor<T>[];
 

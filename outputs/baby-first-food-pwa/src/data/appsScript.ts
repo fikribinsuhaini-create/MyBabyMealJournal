@@ -48,12 +48,6 @@ async function jsonpRequest<T>(params: Record<string, string>) {
 async function postMutation(action: 'upsert' | 'delete' | 'seed', payload: Record<string, string>, mode: 'auto' | 'iframe' = 'auto') {
   if (!scriptUrl) return;
 
-  const body = new URLSearchParams();
-  body.set('action', action);
-  Object.entries(payload).forEach(([key, value]) => {
-    body.set(key, key === 'row' || key === 'data' ? encodeURIComponent(value) : value);
-  });
-
   if (mode === 'auto') {
     try {
       await Promise.race([
@@ -61,9 +55,12 @@ async function postMutation(action: 'upsert' | 'delete' | 'seed', payload: Recor
           method: 'POST',
           mode: 'no-cors',
           headers: {
-            'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+            'Content-Type': 'text/plain;charset=UTF-8',
           },
-          body: body.toString(),
+          body: JSON.stringify({
+            action,
+            ...payload,
+          }),
         }),
         wait(4000),
       ]);

@@ -57,24 +57,25 @@ function doGet(e) {
 function doPost(e) {
   try {
     ensureSheets_();
-    const action = (e.parameter.action || '').trim();
+    const payload = getRequestPayload_(e);
+    const action = String(payload.action || '').trim();
 
     if (action === 'upsert') {
-      const sheetName = e.parameter.sheet;
-      const row = parseJsonParameter_(e.parameter.row);
+      const sheetName = payload.sheet;
+      const row = parseJsonParameter_(payload.row);
       upsertRow_(sheetName, row);
       return respond_(e, true, { data: readAll_() });
     }
 
     if (action === 'delete') {
-      const sheetName = e.parameter.sheet;
-      const id = e.parameter.id;
+      const sheetName = payload.sheet;
+      const id = payload.id;
       deleteRow_(sheetName, id);
       return respond_(e, true, { data: readAll_() });
     }
 
     if (action === 'seed') {
-      const data = parseJsonParameter_(e.parameter.data);
+      const data = parseJsonParameter_(payload.data);
       seedData_(data);
       return respond_(e, true, { data: readAll_() });
     }
@@ -235,7 +236,22 @@ function validateSheet_(sheetName) {
   if (!SHEETS[sheetName]) throw new Error('Invalid sheet name');
 }
 
+function getRequestPayload_(e) {
+  const params = e && e.parameter ? e.parameter : {};
+  const body = e && e.postData && e.postData.contents ? parseJsonParameter_(e.postData.contents) : {};
+
+  if (body && typeof body === 'object' && !Array.isArray(body)) {
+    return Object.assign({}, body, params);
+  }
+
+  return params;
+}
+
 function parseJsonParameter_(value) {
+  if (value && typeof value === 'object') {
+    return value;
+  }
+
   const raw = String(value || '{}');
 
   try {

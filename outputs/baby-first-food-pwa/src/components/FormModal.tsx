@@ -1,6 +1,8 @@
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+const MAX_IMAGE_LENGTH = 42000;
+
 export type FieldConfig = {
   name: string;
   label: string;
@@ -24,8 +26,8 @@ async function resizeImage(file: File) {
     element.src = dataUrl;
   });
 
-  const sizes = [512, 420, 320, 240];
-  const qualities = [0.72, 0.6, 0.5, 0.45];
+  const sizes = [512, 420, 320, 240, 180, 140];
+  const qualities = [0.72, 0.6, 0.5, 0.45, 0.35, 0.28];
 
   for (let index = 0; index < sizes.length; index += 1) {
     const maxSize = sizes[index];
@@ -38,12 +40,12 @@ async function resizeImage(file: File) {
     if (!context) return dataUrl;
     context.drawImage(image, 0, 0, canvas.width, canvas.height);
     const compressed = canvas.toDataURL('image/jpeg', quality);
-    if (compressed.length <= 45000 || index === sizes.length - 1) {
+    if (compressed.length <= MAX_IMAGE_LENGTH) {
       return compressed;
     }
   }
 
-  return dataUrl;
+  throw new Error('Gambar terlalu besar. Pilih gambar lebih kecil.');
 }
 
 export function FormModal({
@@ -62,6 +64,7 @@ export function FormModal({
   const [values, setValues] = useState<Record<string, string>>({});
   const [isProcessingImage, setIsProcessingImage] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fieldError, setFieldError] = useState('');
 
   useEffect(() => {
     const defaults = fields.reduce<Record<string, string>>((acc, field) => {
@@ -69,6 +72,7 @@ export function FormModal({
       return acc;
     }, {});
     setValues(defaults);
+    setFieldError('');
   }, [fields, initialValues]);
 
   return (
@@ -88,6 +92,7 @@ export function FormModal({
             if (isProcessingImage || isSubmitting) return;
             setIsSubmitting(true);
             try {
+              setFieldError('');
               await Promise.resolve(onSubmit(values));
             } finally {
               setIsSubmitting(false);
@@ -123,9 +128,13 @@ export function FormModal({
                       const file = event.target.files?.[0];
                       if (!file) return;
                       setIsProcessingImage(true);
+                      setFieldError('');
                       try {
                         const imageUrl = await resizeImage(file);
                         setValues((current) => ({ ...current, [field.name]: imageUrl }));
+                      } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Gagal proses gambar.';
+                        setFieldError(message);
                       } finally {
                         setIsProcessingImage(false);
                       }
@@ -133,6 +142,7 @@ export function FormModal({
                     className="w-full rounded-[20px] border border-dashed border-oat bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-peach file:px-4 file:py-2 file:font-semibold file:text-white"
                   />
                   {isProcessingImage ? <p className="text-xs font-semibold text-cocoa/55">Memproses gambar...</p> : null}
+                  {fieldError ? <p className="text-xs font-semibold text-berry">{fieldError}</p> : null}
                 </div>
               ) : field.type === 'select' ? (
                 <select

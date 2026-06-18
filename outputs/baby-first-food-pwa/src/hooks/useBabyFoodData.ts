@@ -105,6 +105,7 @@ export function useBabyFoodData() {
       const rows = data[sheet] as RowFor<T>[];
 
       const recipeRow = sheet === 'Recipes' ? (savedRow as RowFor<'Recipes'>) : null;
+      const trackerRow = sheet === 'FoodTracker' ? (savedRow as RowFor<'FoodTracker'>) : null;
 
       if (recipeRow && typeof recipeRow.image_url === 'string' && recipeRow.image_url.length > 45000) {
         const nextRows = rows.some((item) => item.id === id)
@@ -113,6 +114,12 @@ export function useBabyFoodData() {
         commit(replaceSheet(data, sheet, nextRows));
         setSyncState('error');
         setSyncMessage('Gambar resepi terlalu besar. Kecilkan gambar atau guna URL pendek.');
+        return;
+      }
+
+      if (trackerRow && typeof trackerRow.image_url === 'string' && trackerRow.image_url.length > 42000) {
+        setSyncState('error');
+        setSyncMessage('Gambar tracker terlalu besar. Pilih gambar lebih kecil.');
         return;
       }
 
@@ -141,6 +148,7 @@ export function useBabyFoodData() {
         }
         setSyncState('synced');
       } catch (error) {
+        commit(data);
         setSyncState('error');
         const message = error instanceof Error ? error.message : String(error);
         setSyncMessage(`Save ke Apps Script gagal: ${message}`);
@@ -179,6 +187,7 @@ export function useBabyFoodData() {
         }
         setSyncState('synced');
       } catch (error) {
+        commit(data);
         setSyncState('error');
         const message = error instanceof Error ? error.message : String(error);
         setSyncMessage(`Delete ke Apps Script gagal: ${message}`);

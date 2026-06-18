@@ -1,0 +1,90 @@
+create table if not exists public.baby_profiles (
+  id text primary key,
+  baby_name text not null default '',
+  birth_date text not null default ''
+);
+
+create table if not exists public.menu_planner (
+  id text primary key,
+  week text not null default '',
+  age_category text not null default '',
+  date text not null default '',
+  day text not null default '',
+  menu text not null default ''
+);
+
+create table if not exists public.feeding_schedule (
+  id text primary key,
+  week text not null default '',
+  age_category text not null default '',
+  date text not null default '',
+  day text not null default '',
+  breakfast text not null default '',
+  lunch text not null default '',
+  evening text not null default '',
+  dinner text not null default ''
+);
+
+create table if not exists public.recipes (
+  id text primary key,
+  title text not null default '',
+  image_url text not null default '',
+  age_category text not null default '',
+  category text not null default '',
+  ingredients text not null default '',
+  instructions text not null default '',
+  notes text not null default ''
+);
+
+create table if not exists public.food_tracker (
+  id text primary key,
+  food_name text not null default '',
+  introduced_date text not null default '',
+  status text not null default '',
+  reaction text not null default '',
+  notes text not null default '',
+  image_url text not null default ''
+);
+
+alter table public.baby_profiles enable row level security;
+alter table public.menu_planner enable row level security;
+alter table public.feeding_schedule enable row level security;
+alter table public.recipes enable row level security;
+alter table public.food_tracker enable row level security;
+
+drop policy if exists "baby_profiles public all" on public.baby_profiles;
+create policy "baby_profiles public all" on public.baby_profiles for all to anon, authenticated using (true) with check (true);
+
+drop policy if exists "menu_planner public all" on public.menu_planner;
+create policy "menu_planner public all" on public.menu_planner for all to anon, authenticated using (true) with check (true);
+
+drop policy if exists "feeding_schedule public all" on public.feeding_schedule;
+create policy "feeding_schedule public all" on public.feeding_schedule for all to anon, authenticated using (true) with check (true);
+
+drop policy if exists "recipes public all" on public.recipes;
+create policy "recipes public all" on public.recipes for all to anon, authenticated using (true) with check (true);
+
+drop policy if exists "food_tracker public all" on public.food_tracker;
+create policy "food_tracker public all" on public.food_tracker for all to anon, authenticated using (true) with check (true);
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'baby-food-images',
+  'baby-food-images',
+  true,
+  5242880,
+  array['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']
+)
+on conflict (id) do update set public = excluded.public, file_size_limit = excluded.file_size_limit, allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "baby food images public read" on storage.objects;
+create policy "baby food images public read" on storage.objects for select to public using (bucket_id = 'baby-food-images');
+
+drop policy if exists "baby food images public insert" on storage.objects;
+create policy "baby food images public insert" on storage.objects for insert to anon, authenticated with check (bucket_id = 'baby-food-images');
+
+drop policy if exists "baby food images public update" on storage.objects;
+create policy "baby food images public update" on storage.objects for update to anon, authenticated using (bucket_id = 'baby-food-images') with check (bucket_id = 'baby-food-images');
+
+drop policy if exists "baby food images public delete" on storage.objects;
+create policy "baby food images public delete" on storage.objects for delete to anon, authenticated using (bucket_id = 'baby-food-images');

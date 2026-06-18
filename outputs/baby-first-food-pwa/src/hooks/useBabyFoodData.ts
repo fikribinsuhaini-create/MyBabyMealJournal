@@ -1,14 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { appsScriptEnabled, bootstrapAppsScript, deleteAppsScriptRow, fetchAppsScriptData, seedAppsScriptData, upsertAppsScriptRow } from '../data/appsScript';
+import { bootstrapSupabase, deleteSupabaseRow, fetchSupabaseData, seedSupabaseData, supabaseEnabled, upsertSupabaseRow } from '../data/supabase';
 import { createId, loadLocalData, replaceSheet, saveLocalData } from '../data/localStore';
 import type { AppData, SheetName, SyncState } from '../types';
 import { normalizeFeedingSchedule } from '../utils/schedule';
 
 type RowFor<T extends SheetName> = AppData[T][number];
-
-function wait(ms: number) {
-  return new Promise((resolve) => window.setTimeout(resolve, ms));
-}
 
 function hasAnyRows(data: Partial<AppData>) {
   return Object.values(data).some((rows) => Array.isArray(rows) && rows.length > 0);
@@ -78,11 +74,11 @@ export function useBabyFoodData() {
   const [data, setData] = useState<AppData>(() => normalizeAppData(loadLocalData()));
   const [syncState, setSyncState] = useState<SyncState>('local');
   const [syncMessage, setSyncMessage] = useState<string>('');
-  const remoteEnabled = useMemo(() => appsScriptEnabled(), []);
+  const remoteEnabled = useMemo(() => supabaseEnabled(), []);
 
   const syncFromRemote = useCallback(async () => {
     if (!remoteEnabled) {
-      setSyncMessage('Google Sheet belum connect. Set VITE_GOOGLE_SCRIPT_URL di Vercel.');
+      setSyncMessage('Supabase belum connect. Set VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY.');
       setSyncState(navigator.onLine ? 'local' : 'offline');
       return;
     }
@@ -90,7 +86,7 @@ export function useBabyFoodData() {
     try {
       setSyncMessage('');
       setSyncState('syncing');
-      let remote = await bootstrapAppsScript();
+      let remote = await bootstrapSupabase();
       if (!remote) {
         setSyncState('local');
         return;
@@ -98,8 +94,8 @@ export function useBabyFoodData() {
 
       const local = normalizeAppData(loadLocalData());
       if (!hasAnyRows(remote) && hasAnyRows(local)) {
-        await seedAppsScriptData(local);
-        remote = await fetchAppsScriptData();
+        await seedSupabaseData(local);
+        remote = await fetchSupabaseData();
       }
 
       const next = mergeRemoteData(local, remote ?? {});
@@ -123,22 +119,6 @@ export function useBabyFoodData() {
     setData(normalized);
     saveLocalData(normalized);
   }, []);
-
-  const waitForRemoteRows = useCallback(
-    async <T extends SheetName>(sheet: T, matcher: (rows: RowFor<T>[]) => boolean, maxAttempts = 12) => {
-      for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-        const remote = await fetchAppsScriptData();
-        const remoteRows = (remote?.[sheet] ?? []) as RowFor<T>[];
-        if (matcher(remoteRows)) {
-          return remote;
-        }
-        await wait(1500);
-      }
-
-      return null;
-    },
-    []
-  );
 
   const upsert = useCallback(
     async <T extends SheetName>(sheet: T, row: Omit<RowFor<T>, 'id'> & { id?: string }) => {
@@ -180,20 +160,12 @@ export function useBabyFoodData() {
       try {
         setSyncMessage('');
         setSyncState('syncing');
-        await upsertAppsScriptRow(sheet, finalRow as Record<string, string>);
-        const pollAttempts =
-          sheet === 'FoodTracker' &&
-          typeof (finalRow as RowFor<'FoodTracker'>).image_url === 'string' &&
-          (finalRow as RowFor<'FoodTracker'>).image_url.startsWith('data:image/')
-            ? 20
-            : 12;
-        let remote =
-          (await waitForRemoteRows(sheet, (remoteRows) => remoteRows.some((item) => rowMatchesRemote(sheet, finalRow, item)), pollAttempts)) ??
-          (await fetchAppsScriptData());
+        const remoteRow = (await upsertSupabaseRow(sheet, finalRow as Record<string, string>)) as RowFor<T>;
+        const remote = await fetchSupabaseData();
         const remoteRows = (remote?.[sheet] ?? []) as RowFor<T>[];
 
-        if (!remoteRows.some((item) => rowMatchesRemote(sheet, finalRow, item))) {
-          throw new Error('Apps Script save tak sampai ke Google Sheet. Cuba redeploy Apps Script atau kecilkan gambar lagi.');
+        if (!remoteRows.some((item) => rowMatchesRemote(sheet, remoteRow, item))) {
+          throw new Error('Supabase save tak sampai ke database.');
         }
         if (remote) {
           commit(mergeRemoteData(next, remote));
@@ -204,11 +176,11 @@ export function useBabyFoodData() {
         commit(data);
         setSyncState('error');
         const message = error instanceof Error ? error.message : String(error);
-        setSyncMessage(`Save ke Apps Script gagal: ${message}`);
+        setSyncMessage(`Save ke Supabase gagal: ${message}`);
         return false;
       }
     },
-    [commit, data, remoteEnabled, waitForRemoteRows]
+    [commit, data, remoteEnabled]
   );
 
   const remove = useCallback(
@@ -229,12 +201,12 @@ export function useBabyFoodData() {
       try {
         setSyncMessage('');
         setSyncState('syncing');
-        await deleteAppsScriptRow(sheet, id);
-        const remote = await fetchAppsScriptData();
+        await deleteSupabaseRow(sheet, id);
+        const remote = await fetchSupabaseData();
         const remoteRows = (remote?.[sheet] ?? []) as RowFor<T>[];
         const existsInRemote = remoteRows.some((item) => item.id === id);
         if (existsInRemote) {
-          throw new Error('Apps Script delete tak sampai ke Google Sheet');
+          throw new Error('Supabase delete tak sampai ke database');
         }
         if (remote) {
           commit(mergeRemoteData(next, remote));
@@ -244,7 +216,7 @@ export function useBabyFoodData() {
         commit(data);
         setSyncState('error');
         const message = error instanceof Error ? error.message : String(error);
-        setSyncMessage(`Delete ke Apps Script gagal: ${message}`);
+        setSyncMessage(`Delete ke Supabase gagal: ${message}`);
       }
     },
     [commit, data, remoteEnabled]

@@ -9,8 +9,8 @@ PWA mobile-first untuk ibu bapa merancang menu, jadual makan, resepi dan rekod m
 3. Pergi `Menu` untuk rancang makanan ikut minggu, tarikh, dan masa makan.
 4. Pergi `Jadual` untuk pilih menu yang sudah ada dan susun ikut sarapan, tengah hari, petang, malam.
 5. Pergi `Tracker` untuk simpan feedback bayi selepas makan, sama ada dari menu atau secara manual.
-6. Simpan data dan tunggu status `Synced` jika Google Apps Script sudah connect.
-7. Kalau status `Local`, data masih ada dalam phone browser, cuma belum hantar ke Google Sheet.
+6. Simpan data dan tunggu status `Synced` jika Supabase sudah connect.
+7. Kalau status `Local`, data masih ada dalam phone browser, cuma belum hantar ke cloud database.
 
 ## Jalankan
 
@@ -25,12 +25,14 @@ npm run dev
 npm run build
 ```
 
-## Google Sheets + Apps Script
+## Supabase
 
 Salin `.env.example` ke `.env` dan isi:
 
 ```bash
-VITE_GOOGLE_SCRIPT_URL=https://script.google.com/macros/s/XXXX/exec
+VITE_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_ANON_KEY
+VITE_SUPABASE_STORAGE_BUCKET=baby-food-images
 ```
 
 Tanpa konfigurasi ini, data disimpan dalam `localStorage` dan app tetap boleh digunakan offline.
@@ -41,33 +43,38 @@ Tanpa konfigurasi ini, data disimpan dalam `localStorage` dan app tetap boleh di
 
 1. Buka `Project Settings`.
 2. Pergi `Environment Variables`.
-3. Add `VITE_GOOGLE_SCRIPT_URL` dengan nilai URL `.../exec`.
-4. Set untuk `Production` dan `Preview`.
-5. Redeploy app.
+3. Add `VITE_SUPABASE_URL`.
+4. Add `VITE_SUPABASE_ANON_KEY`.
+5. Optional: add `VITE_SUPABASE_STORAGE_BUCKET` jika nama bucket bukan `baby-food-images`.
+6. Set untuk `Production` dan `Preview`.
+7. Redeploy app.
 
-Kalau badge atas tulis `Local`, app belum connect ke Google Sheet lagi.
+Kalau badge atas tulis `Local`, app belum connect ke Supabase lagi.
 
 ### Langkah setup penuh
 
-1. Buka Google Sheet baru.
-2. Simpan `spreadsheetId` daripada URL sheet itu.
-3. Dalam folder [google-apps-script/Code.gs](C:/Users/fikri/Documents/Codex/2026-06-12/caveman-c-users-fikri-agents-skills-2/outputs/baby-first-food-pwa/google-apps-script/Code.gs), salin semua kod ke project Google Apps Script baru.
-4. Tukar nilai `SPREADSHEET_ID` kepada ID sheet anda.
-5. Dalam Apps Script, tekan `Deploy` -> `New deployment`.
-6. Pilih `Web app`.
-7. `Execute as`: `Me`.
-8. `Who has access`: `Anyone with the link`.
-9. Tekan `Deploy`, authorize bila diminta, lalu salin URL `.../exec`.
-10. Letak URL itu dalam `.env` sebagai `VITE_GOOGLE_SCRIPT_URL`.
-11. Restart `npm run dev`.
+1. Buka [Supabase](https://supabase.com), create project baru.
+2. Pergi `SQL Editor`.
+3. Jalankan fail `supabase/schema.sql`.
+4. Pergi `Project Settings` -> `API`.
+5. Salin `Project URL` dan `anon public key`.
+6. Letak dalam `.env` sebagai `VITE_SUPABASE_URL` dan `VITE_SUPABASE_ANON_KEY`.
+7. Restart `npm run dev`.
 
-### Sheet yang akan dicipta automatik
+### Table yang akan digunakan
 
-- `BabyProfile`: `id`, `baby_name`, `birth_date`
-- `MenuPlanner`: `id`, `week`, `age_category`, `day`, `menu`
-- `FeedingSchedule`: `id`, `week`, `age_category`, `date`, `day`, `breakfast`, `lunch`, `evening`, `dinner`
-- `Recipes`: `id`, `title`, `image_url`, `age_category`, `category`, `ingredients`, `instructions`, `notes`
-- `FoodTracker`: `id`, `food_name`, `introduced_date`, `status`, `reaction`, `notes`
+- `baby_profiles`
+- `menu_planner`
+- `feeding_schedule`
+- `recipes`
+- `food_tracker`
+
+### Storage bucket
+
+- Default bucket: `baby-food-images`
+- Folder auto:
+  - `tracker/`
+  - `recipes/`
 
 ## Install PWA
 

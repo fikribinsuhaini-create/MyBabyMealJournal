@@ -98,10 +98,41 @@ function ensureSheets_() {
       sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     }
 
+    if (sheetName === 'MenuPlanner') {
+      migrateMenuPlannerSheet_(sheet, headers);
+    }
+
     if (sheetName === 'FeedingSchedule') {
       migrateFeedingScheduleSheet_(sheet, headers);
     }
   });
+}
+
+function migrateMenuPlannerSheet_(sheet, headers) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return;
+
+  const lastColumn = Math.max(sheet.getLastColumn(), headers.length);
+  const values = sheet.getRange(2, 1, lastRow - 1, lastColumn).getValues();
+  let needsMigration = lastColumn !== headers.length;
+  const migrated = values.map((row) => {
+    const entry = headers.reduce((accumulator, header, index) => {
+      accumulator[header] = formatCell_(row[index]);
+      return accumulator;
+    }, {});
+    const normalized = normalizeMenuPlannerRow_(entry);
+    if (JSON.stringify(entry) !== JSON.stringify(normalized)) {
+      needsMigration = true;
+    }
+    return headers.map((header) => normalized[header] || '');
+  });
+
+  if (needsMigration) {
+    sheet.getRange(2, 1, migrated.length, headers.length).setValues(migrated);
+    if (lastColumn > headers.length) {
+      sheet.deleteColumns(headers.length + 1, lastColumn - headers.length);
+    }
+  }
 }
 
 function migrateFeedingScheduleSheet_(sheet, headers) {
@@ -148,6 +179,7 @@ function readAll_() {
         entry[header] = formatCell_(row[index]);
         return entry;
       }, {}))
+      .map((row) => sheetName === 'MenuPlanner' ? normalizeMenuPlannerRow_(row) : row)
       .map((row) => sheetName === 'FeedingSchedule' ? normalizeFeedingScheduleRow_(row) : row);
   });
 
@@ -163,6 +195,8 @@ function upsertRow_(sheetName, row) {
 
   const normalizedRow = sheetName === 'FeedingSchedule'
     ? normalizeFeedingScheduleRow_(row)
+    : sheetName === 'MenuPlanner'
+      ? normalizeMenuPlannerRow_(row)
     : sheetName === 'FoodTracker'
       ? normalizeFoodTrackerRow_(row)
       : row;
@@ -199,6 +233,25 @@ function seedData_(data) {
 
 function validateSheet_(sheetName) {
   if (!SHEETS[sheetName]) throw new Error('Invalid sheet name');
+}
+
+function normalizeMenuPlannerRow_(row) {
+  const next = Object.assign({}, row);
+  const legacyShiftedRow = isLegacyMenuPlannerShift_(next);
+
+  if (legacyShiftedRow) {
+    const legacyDay = next.date;
+    const legacyMenu = next.day;
+    next.date = '';
+    next.day = legacyDay;
+    next.menu = legacyMenu;
+  }
+
+  return next;
+}
+
+function isLegacyMenuPlannerShift_(row) {
+  return !isIsoDate_(row.date) && isDayLabel_(row.date) && String(row.menu || '').trim() === '';
 }
 
 function normalizeFeedingScheduleRow_(row) {
@@ -282,6 +335,10 @@ function isValidAgeCategory_(value) {
 
 function isIsoDate_(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(String(value || '').trim());
+}
+
+function isDayLabel_(value) {
+  return /^Day\s*\d+$/i.test(String(value || '').trim());
 }
 
 function looksLikeDataUrl_(value) {

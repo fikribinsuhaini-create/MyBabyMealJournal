@@ -243,7 +243,7 @@ export function TrackerView({
       {pickerOpen ? (
         <div className="fixed inset-0 z-40 bg-cocoa/35 px-4 py-5 backdrop-blur-sm">
           <div className="mx-auto flex h-full max-w-md flex-col justify-end">
-            <div className="max-h-[82vh] overflow-hidden rounded-[32px] bg-cream shadow-soft">
+            <div className="flex max-h-[82vh] min-h-0 flex-col overflow-hidden rounded-[32px] bg-cream shadow-soft">
               <div className="flex items-center justify-between border-b border-white px-5 py-4">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-[0.16em] text-sageDeep">Quick add tracker</p>
@@ -259,7 +259,7 @@ export function TrackerView({
                 </button>
               </div>
 
-              <div className="space-y-4 overflow-y-auto overscroll-contain px-5 py-5">
+              <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-5 touch-pan-y" style={{ WebkitOverflowScrolling: 'touch' }}>
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {availableAges.map((ageCategory) => (
                     <button
@@ -352,4 +352,5 @@ export function TrackerView({
     </div>
   );
 }
+
 

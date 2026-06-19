@@ -50,7 +50,7 @@ export function AppShell({
               <Baby size={24} />
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sageDeep">Baby First Food</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-sageDeep">Asytar Food Journal</p>
               <h1 className="max-w-[16rem] break-words text-xl font-bold leading-tight">
                 {babyName || 'Planner Bayi'}
                 {babyAge ? <span className="font-semibold text-cocoa/70"> ({babyAge})</span> : null}
@@ -91,3 +91,4 @@ export function AppShell({
     </div>
   );
 }
+

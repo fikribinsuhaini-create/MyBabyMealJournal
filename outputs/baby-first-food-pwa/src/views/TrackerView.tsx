@@ -259,7 +259,7 @@ export function TrackerView({
                 </button>
               </div>
 
-              <div className="space-y-4 overflow-y-auto px-5 py-5">
+              <div className="space-y-4 overflow-y-auto overscroll-contain px-5 py-5">
                 <div className="flex gap-2 overflow-x-auto pb-1">
                   {availableAges.map((ageCategory) => (
                     <button
@@ -352,3 +352,4 @@ export function TrackerView({
     </div>
   );
 }
+

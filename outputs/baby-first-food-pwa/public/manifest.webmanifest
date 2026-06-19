@@ -1,6 +1,6 @@
 {
   "name": "Asytar Food Journal",
-  "short_name": "Asytar Journal",
+  "short_name": "Asytar Food Journal",
   "description": "Jurnal pemakanan bayi Asytar dari hari pertama hingga seterusnya.",
   "start_url": "/",
   "scope": "/",
@@ -23,4 +23,5 @@
     }
   ]
 }
+
 

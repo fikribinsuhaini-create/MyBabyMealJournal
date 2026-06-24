@@ -19,7 +19,7 @@ export default function App() {
     <AppShell activeTab={activeTab} setActiveTab={setActiveTab} syncState={syncState} syncMessage={syncMessage} data={data}>
       {activeTab === 'dashboard' ? <DashboardView data={data} upsert={upsertBabyProfile} /> : null}
       {activeTab === 'tracker' ? (
-        <TrackerView rows={data.FoodTracker} menuRows={data.MenuPlanner} upsert={upsertTracker} remove={(id) => remove('FoodTracker', id)} />
+        <TrackerView rows={data.FoodTracker} upsert={upsertTracker} remove={(id) => remove('FoodTracker', id)} />
       ) : null}
       {activeTab === 'gallery' ? <GalleryView rows={data.FoodTracker} birthDate={babyBirthDate} /> : null}
     </AppShell>

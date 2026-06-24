@@ -26,7 +26,6 @@ export function DashboardView({
   const logCount = data.FoodTracker.length;
   const reactionCount = data.FoodTracker.filter((item) => item.reaction && item.reaction !== 'Belum Dinilai').length;
   const galleryCount = data.FoodTracker.filter((item) => item.image_url).length;
-  const legacyMenuCount = data.MenuPlanner.length;
 
   const latestTracker = useMemo(
     () =>
@@ -75,18 +74,6 @@ export function DashboardView({
           </div>
         </div>
       </Card>
-
-      {legacyMenuCount ? (
-        <Card className="bg-sage/10 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.14em] text-sageDeep">Log lama</p>
-              <p className="mt-1 text-sm font-semibold text-cocoa/65">MenuPlanner lama masih selamat dalam Tracker.</p>
-            </div>
-            <Pill tone="sage">{legacyMenuCount} menu</Pill>
-          </div>
-        </Card>
-      ) : null}
 
       <div className="grid grid-cols-3 gap-3">
         {stats.map(([label, value]) => (

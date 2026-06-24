@@ -107,8 +107,8 @@ export function MenuView({
   return (
     <div className="space-y-4">
       <SectionTitle
-        eyebrow="Menu Planner"
-        title="Rancang ikut umur"
+        eyebrow="Log Harian"
+        title="Log makan ikut umur"
         action={
           <button
             type="button"
@@ -139,7 +139,7 @@ export function MenuView({
         ))}
       </div>
 
-      <SearchInput value={search} onChange={setSearch} placeholder="Cari Day 1, Bubur..." />
+      <SearchInput value={search} onChange={setSearch} placeholder="Cari Day 1, Bubur, tarikh..." />
 
       <div className="space-y-3">
         {groupedWeekWithDays.map(({ week, dayGroups }) => {
@@ -157,7 +157,7 @@ export function MenuView({
                   <h3 className="mt-2 text-lg font-bold">{activeAge}</h3>
                 </div>
                 <div className="flex items-center gap-2">
-                  <p className="text-xs font-semibold text-cocoa/55">{dayGroups.reduce((count, group) => count + group.items.length, 0)} menu</p>
+                  <p className="text-xs font-semibold text-cocoa/55">{dayGroups.reduce((count, group) => count + group.items.length, 0)} log</p>
                   {isOpen ? <ChevronUp size={18} className="text-cocoa/60" /> : <ChevronDown size={18} className="text-cocoa/60" />}
                 </div>
               </button>
@@ -254,16 +254,16 @@ export function MenuView({
         })}
       </div>
 
-      {!groupedByWeek.length ? <EmptyState text="Tiada rekod menu untuk umur ini." /> : null}
+      {!groupedByWeek.length ? <EmptyState text="Tiada log makan untuk umur ini." /> : null}
 
       {activeRecord ? (
         <FormModal
-          title={editing ? 'Kemaskini Menu' : 'Tambah Menu'}
+          title={editing ? 'Kemaskini Log Makan' : 'Tambah Log Makan'}
           fields={[
             { name: 'week', label: 'Minggu', type: 'select', options: weeks },
             { name: 'age_category', label: 'Kategori Umur', type: 'select', options: ageCategories },
             { name: 'day', label: 'Hari', type: 'select', options: menuDays },
-            { name: 'menu', label: 'Menu / Makanan' },
+            { name: 'menu', label: 'Makanan / Menu' },
           ]}
           initialValues={activeRecord as Record<string, string>}
           onClose={() => {
@@ -307,4 +307,5 @@ export function MenuView({
 function activeWeekFromList(groupedByWeek: Array<{ week: string }>) {
   return groupedByWeek[0]?.week ?? weeks[0];
 }
+
 

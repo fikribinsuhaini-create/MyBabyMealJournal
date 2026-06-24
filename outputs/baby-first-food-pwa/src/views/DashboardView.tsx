@@ -1,15 +1,7 @@
-import { useMemo, useState } from 'react';
-import { FormModal } from '../components/FormModal';
+import { useMemo } from 'react';
 import { Card, Pill } from '../components/Ui';
 import { formatDisplayDate, todayIso } from '../utils/date';
 import type { AppData, BabyProfile } from '../types';
-
-const mealCards = [
-  { label: 'Sarapan', key: 'breakfast', time: '07:30', tone: 'bg-peach/20 text-peachDeep' },
-  { label: 'Tengah Hari', key: 'lunch', time: '12:30', tone: 'bg-sage/20 text-sageDeep' },
-  { label: 'Petang', key: 'evening', time: '15:30', tone: 'bg-butter/35 text-cocoa' },
-  { label: 'Malam', key: 'dinner', time: '18:30', tone: 'bg-white/80 text-cocoa' },
-] as const;
 
 export function DashboardView({
   data,
@@ -19,17 +11,37 @@ export function DashboardView({
   upsert: (sheet: 'BabyProfile', row: BabyProfile) => Promise<void>;
 }) {
   const todayDate = formatDisplayDate(todayIso());
-  const schedule = data.FeedingSchedule.find((item) => item.date === todayIso()) ?? null;
   const reactionCount = data.FoodTracker.filter((item) => item.reaction && item.reaction !== 'Belum Dinilai').length;
   const galleryCount = data.FoodTracker.filter((item) => item.image_url).length;
+  const logCount = data.MenuPlanner.length;
+
+  const latestLog = useMemo(
+    () =>
+      [...data.MenuPlanner].sort((left, right) => {
+        const leftTime = new Date(left.date || '1970-01-01').getTime();
+        const rightTime = new Date(right.date || '1970-01-01').getTime();
+        return rightTime - leftTime;
+      })[0] ?? null,
+    [data.MenuPlanner]
+  );
+
+  const latestTracker = useMemo(
+    () =>
+      [...data.FoodTracker].sort((left, right) => {
+        const leftTime = new Date(left.introduced_date || '1970-01-01').getTime();
+        const rightTime = new Date(right.introduced_date || '1970-01-01').getTime();
+        return rightTime - leftTime;
+      })[0] ?? null,
+    [data.FoodTracker]
+  );
 
   const stats = useMemo(
     () => [
+      ['Log', logCount.toString()],
       ['Gallery', galleryCount.toString()],
-      ['Makanan', data.FoodTracker.length.toString()],
       ['Reaksi', reactionCount.toString()],
     ],
-    [galleryCount, data.FoodTracker.length, reactionCount]
+    [galleryCount, logCount, reactionCount]
   );
 
   return (
@@ -38,32 +50,30 @@ export function DashboardView({
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-sageDeep">Hari ini</p>
-            <h3 className="text-lg font-bold">Ringkasan</h3>
+            <h3 className="text-lg font-bold">Jurnal ringkas</h3>
           </div>
           <div className="text-right">
-            <Pill tone="sage">{schedule?.day ?? 'â€”'}</Pill>
-            <p className="mt-1 text-[11px] font-semibold text-cocoa/55">{todayDate}</p>
+            <Pill tone="sage">{todayDate}</Pill>
           </div>
         </div>
 
-        {schedule ? (
-          <div className="grid grid-cols-2 gap-3">
-            {mealCards.map(({ label, key, time, tone }) => (
-              <div key={key} className={`rounded-[22px] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] ${tone}`}>
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-xs font-bold uppercase tracking-[0.12em] opacity-90">{label}</p>
-                  <span className="rounded-full bg-white/65 px-2 py-0.5 text-[10px] font-semibold text-cocoa/70">{time}</span>
-                </div>
-                <p className="mt-3 text-lg font-bold leading-tight">{schedule[key] || '-'}</p>
-              </div>
-            ))}
+        <div className="space-y-3">
+          <div className="rounded-[22px] bg-white/75 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-cocoa/60">Log makan terbaru</p>
+            <p className="mt-2 text-lg font-bold leading-tight text-cocoa">{latestLog?.menu || '-'}</p>
+            <p className="mt-1 text-sm font-semibold text-cocoa/55">
+              {latestLog?.date ? `${formatDisplayDate(latestLog.date)} · ${latestLog.day}` : 'Belum ada log makan lagi'}
+            </p>
           </div>
-        ) : (
-          <div className="rounded-[22px] border border-dashed border-oat bg-white/65 px-4 py-5 text-center">
-            <p className="text-sm font-semibold text-cocoa/70">Belum ada jadual untuk tarikh ini.</p>
-            <p className="mt-1 text-xs text-cocoa/55">Tambah dalam tab Jadual dulu.</p>
+
+          <div className="rounded-[22px] bg-white/75 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-cocoa/60">Tracker terbaru</p>
+            <p className="mt-2 text-lg font-bold leading-tight text-cocoa">{latestTracker?.food_name || '-'}</p>
+            <p className="mt-1 text-sm font-semibold text-cocoa/55">
+              {latestTracker?.introduced_date ? `${formatDisplayDate(latestTracker.introduced_date)} · ${latestTracker.reaction}` : 'Belum ada feedback tracker lagi'}
+            </p>
           </div>
-        )}
+        </div>
       </Card>
 
       <div className="grid grid-cols-3 gap-3">

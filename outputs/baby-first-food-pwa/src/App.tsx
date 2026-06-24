@@ -4,9 +4,8 @@ import { useBabyFoodData } from './hooks/useBabyFoodData';
 import { DashboardView } from './views/DashboardView';
 import { GalleryView } from './views/GalleryView';
 import { MenuView } from './views/MenuView';
-import { ScheduleView } from './views/ScheduleView';
 import { TrackerView } from './views/TrackerView';
-import type { BabyProfile, FeedingSchedule, FoodTracker, MenuPlanner } from './types';
+import type { BabyProfile, FoodTracker, MenuPlanner } from './types';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
@@ -17,9 +16,6 @@ export default function App() {
   const upsertMenu = async (row: MenuPlanner) => {
     await upsert('MenuPlanner', row);
   };
-  const upsertSchedule = async (row: FeedingSchedule) => {
-    await upsert('FeedingSchedule', row);
-  };
   const upsertTracker = async (row: FoodTracker) => upsert('FoodTracker', row);
   const babyBirthDate = data.BabyProfile[0]?.birth_date ?? '';
 
@@ -27,9 +23,6 @@ export default function App() {
     <AppShell activeTab={activeTab} setActiveTab={setActiveTab} syncState={syncState} syncMessage={syncMessage} data={data}>
       {activeTab === 'dashboard' ? <DashboardView data={data} upsert={upsertBabyProfile} /> : null}
       {activeTab === 'menu' ? <MenuView rows={data.MenuPlanner} upsert={upsertMenu} remove={(id) => remove('MenuPlanner', id)} /> : null}
-      {activeTab === 'schedule' ? (
-        <ScheduleView rows={data.FeedingSchedule} menuRows={data.MenuPlanner} upsert={upsertSchedule} remove={(id) => remove('FeedingSchedule', id)} />
-      ) : null}
       {activeTab === 'tracker' ? (
         <TrackerView rows={data.FoodTracker} menuRows={data.MenuPlanner} upsert={upsertTracker} remove={(id) => remove('FoodTracker', id)} />
       ) : null}
@@ -37,3 +30,4 @@ export default function App() {
     </AppShell>
   );
 }
+

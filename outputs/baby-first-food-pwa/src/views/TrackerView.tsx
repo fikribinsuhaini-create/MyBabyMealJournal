@@ -3,8 +3,16 @@ import { useEffect, useMemo, useState } from 'react';
 import { FormModal } from '../components/FormModal';
 import { Card, EmptyState, IconButton, Pill, SectionTitle } from '../components/Ui';
 import { ageCategories, foodStatuses, reactions, weeks } from '../constants';
+import type { AgeCategory, FoodTracker, MenuPlanner } from '../types';
 import { formatDisplayDate, todayIso, toDateInputValue } from '../utils/date';
-import type { FoodTracker, MenuPlanner } from '../types';
+
+const META_START = '[[baby-food-meta:';
+const META_END = ']]';
+
+type TrackerFormValues = Record<string, string> & {
+  age_category?: string;
+  week?: string;
+};
 
 function statusTone(status: string) {
   if (status === 'Alergi') return 'berry';
@@ -24,6 +32,61 @@ function weekdayFromDate(dateValue: string) {
   return new Intl.DateTimeFormat('ms-MY', { weekday: 'long' }).format(parsed);
 }
 
+function parseTrackerNotes(notes = '') {
+  if (!notes.startsWith(META_START)) {
+    return { age_category: '', week: '', cleanNotes: notes };
+  }
+
+  const closeIndex = notes.indexOf(META_END);
+  if (closeIndex === -1) {
+    return { age_category: '', week: '', cleanNotes: notes };
+  }
+
+  const rawMeta = notes.slice(META_START.length, closeIndex);
+  const cleanNotes = notes.slice(closeIndex + META_END.length).replace(/^\n+/, '');
+
+  try {
+    const meta = JSON.parse(rawMeta) as Partial<Record<'age_category' | 'week', string>>;
+    return {
+      age_category: meta.age_category ?? '',
+      week: meta.week ?? '',
+      cleanNotes,
+    };
+  } catch {
+    return { age_category: '', week: '', cleanNotes };
+  }
+}
+
+function serializeTrackerNotes(notes: string, ageCategory: string, week: string) {
+  const meta = JSON.stringify({ age_category: ageCategory, week });
+  const cleanNotes = notes.trim();
+  return cleanNotes ? `${META_START}${meta}${META_END}\n${cleanNotes}` : `${META_START}${meta}${META_END}`;
+}
+
+function trackerAge(row: FoodTracker) {
+  return parseTrackerNotes(row.notes).age_category || 'Umur belum set';
+}
+
+function trackerWeek(row: FoodTracker) {
+  return parseTrackerNotes(row.notes).week || 'Minggu belum set';
+}
+
+function cleanTrackerNotes(row: FoodTracker) {
+  return parseTrackerNotes(row.notes).cleanNotes;
+}
+
+function createDefaultRecord(activeAge: string, activeWeek: string): Partial<FoodTracker> & TrackerFormValues {
+  return {
+    age_category: activeAge,
+    week: activeWeek,
+    introduced_date: todayIso(),
+    status: foodStatuses[0],
+    reaction: reactions[0],
+    notes: '',
+    image_url: '',
+  };
+}
+
 export function TrackerView({
   rows,
   menuRows,
@@ -37,7 +100,7 @@ export function TrackerView({
 }) {
   const [editing, setEditing] = useState<FoodTracker | null>(null);
   const [adding, setAdding] = useState(false);
-  const [prefill, setPrefill] = useState<Partial<FoodTracker> | null>(null);
+  const [prefill, setPrefill] = useState<(Partial<FoodTracker> & TrackerFormValues) | null>(null);
   const [activeAge, setActiveAge] = useState(ageCategories[0]);
   const [activeWeek, setActiveWeek] = useState(weeks[0]);
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -64,7 +127,7 @@ export function TrackerView({
 
   useEffect(() => {
     if (!availableAges.length) return;
-    if (!availableAges.includes(activeAge)) {
+    if (!availableAges.includes(activeAge as AgeCategory)) {
       setActiveAge(availableAges[0]);
     }
   }, [activeAge, availableAges]);
@@ -95,11 +158,7 @@ export function TrackerView({
           return accumulator;
         }
 
-        accumulator.push({
-          day: row.day,
-          date: row.date,
-          items: [row],
-        });
+        accumulator.push({ day: row.day, date: row.date, items: [row] });
         return accumulator;
       }, [])
       .sort((left, right) => getDayNumber(left.day) - getDayNumber(right.day));
@@ -118,22 +177,23 @@ export function TrackerView({
       }),
     [rows]
   );
-  const activeRecord =
-    editing ??
-    (adding
-      ? prefill ??
-        ({
-          introduced_date: todayIso(),
-          status: foodStatuses[0],
-          reaction: reactions[0],
-        } as Partial<FoodTracker>)
-      : null);
+
+  const activeRecord = editing
+    ? ({
+        ...editing,
+        age_category: trackerAge(editing) === 'Umur belum set' ? ageCategories[0] : trackerAge(editing),
+        week: trackerWeek(editing) === 'Minggu belum set' ? weeks[0] : trackerWeek(editing),
+        notes: cleanTrackerNotes(editing),
+      } as Partial<FoodTracker> & TrackerFormValues)
+    : adding
+      ? prefill ?? createDefaultRecord(activeAge, activeWeek)
+      : null;
 
   return (
     <div className="space-y-4">
       <SectionTitle
-        eyebrow="Food Tracker"
-        title="Feedback makanan"
+        eyebrow="Jurnal Makan"
+        title="Log & feedback"
         action={
           <button
             type="button"
@@ -144,84 +204,102 @@ export function TrackerView({
             className="flex h-11 items-center gap-2 rounded-full bg-peach px-4 text-sm font-bold text-white shadow-soft"
           >
             <Plus size={18} />
-            Manual
+            Tambah
           </button>
         }
       />
+
+      <Card className="space-y-3 bg-sage/12">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-sageDeep">Flow baru</p>
+            <h3 className="mt-1 text-lg font-bold text-cocoa">Satu tempat untuk catat makan</h3>
+            <p className="mt-1 text-sm leading-relaxed text-cocoa/65">Tarikh, umur, minggu, makanan, reaksi, nota dan gambar masuk sini.</p>
+          </div>
+          <Pill tone="sage">Aman</Pill>
+        </div>
+      </Card>
 
       {groupedMenus.length ? (
         <Card className="space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-sageDeep">Pilih dari menu</p>
-              <p className="text-sm text-cocoa/65">Buka panel ringkas, pilih ikut umur, minggu dan hari</p>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-sageDeep">Log lama</p>
+              <p className="text-sm text-cocoa/65">Data MenuPlanner lama masih boleh dijadikan feedback.</p>
             </div>
             <Pill tone="sage">{groupedMenus.length} menu</Pill>
           </div>
-          <button
-            type="button"
-            onClick={() => setPickerOpen(true)}
-            className="h-12 w-full rounded-[18px] bg-sage font-bold text-white shadow-soft"
-          >
-            Buka picker menu
+          <button type="button" onClick={() => setPickerOpen(true)} className="h-12 w-full rounded-[18px] bg-white font-bold text-cocoa shadow-sm">
+            Pilih log lama
           </button>
         </Card>
       ) : null}
 
       <div className="space-y-3">
-        {sortedRows.map((row) => (
-          <Card key={row.id} className="overflow-hidden">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 flex-1">
-                <div className="mb-2 flex flex-wrap gap-2">
-                  <Pill tone={statusTone(row.status)}>{row.status}</Pill>
-                  <Pill tone="sage">{formatDisplayDate(row.introduced_date)}</Pill>
+        {sortedRows.map((row) => {
+          const displayNotes = cleanTrackerNotes(row);
+          const displayAge = trackerAge(row);
+          const displayWeek = trackerWeek(row);
+          const dayName = weekdayFromDate(row.introduced_date);
+
+          return (
+            <Card key={row.id} className="overflow-hidden">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="mb-2 flex flex-wrap gap-2">
+                    <Pill tone={statusTone(row.status)}>{row.status}</Pill>
+                    <Pill tone="sage">{formatDisplayDate(row.introduced_date)}</Pill>
+                    {dayName ? <Pill tone="peach">{dayName}</Pill> : null}
+                  </div>
+                  <h3 className="break-words text-xl font-bold leading-tight">{row.food_name}</h3>
+                  <p className="mt-1 text-sm text-cocoa/55">{displayAge} - {displayWeek}</p>
                 </div>
-                <h3 className="break-words text-xl font-bold leading-tight">{row.food_name}</h3>
-                <p className="mt-1 text-sm text-cocoa/55">Makanan pertama diperkenalkan</p>
+                <div className="flex gap-2">
+                  <IconButton label="Kemaskini" onClick={() => setEditing(row)}>
+                    <Edit3 size={17} />
+                  </IconButton>
+                  <IconButton label="Padam" onClick={() => remove(row.id)} tone="danger">
+                    <Trash2 size={17} />
+                  </IconButton>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <IconButton label="Kemaskini" onClick={() => setEditing(row)}>
-                  <Edit3 size={17} />
-                </IconButton>
-                <IconButton label="Padam" onClick={() => remove(row.id)} tone="danger">
-                  <Trash2 size={17} />
-                </IconButton>
-              </div>
-            </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Pill tone={row.reaction.includes('Ada Reaksi') ? 'berry' : row.reaction === 'Belum Dinilai' ? 'butter' : 'peach'}>{row.reaction}</Pill>
-              {row.notes ? <Pill tone="sage">Ada catatan</Pill> : null}
-            </div>
-
-            {row.image_url ? (
-              <div className="mt-4 overflow-hidden rounded-[20px] bg-cream">
-                <img src={row.image_url} alt={row.food_name} className="h-52 w-full object-cover" />
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Pill tone={row.reaction.includes('Ada Reaksi') ? 'berry' : row.reaction === 'Belum Dinilai' ? 'butter' : 'peach'}>{row.reaction}</Pill>
+                {displayNotes ? <Pill tone="sage">Ada catatan</Pill> : null}
+                {row.image_url ? <Pill tone="sage">Ada gambar</Pill> : null}
               </div>
-            ) : null}
 
-            {row.notes ? (
-              <div className="mt-4 rounded-[18px] bg-cream px-4 py-3">
-                <p className="text-xs font-bold uppercase tracking-[0.12em] text-cocoa/50">Diari Harian</p>
-                <p className="mt-2 text-sm leading-relaxed text-cocoa/80">{row.notes}</p>
-              </div>
-            ) : null}
-          </Card>
-        ))}
+              {row.image_url ? (
+                <div className="mt-4 overflow-hidden rounded-[20px] bg-cream">
+                  <img src={row.image_url} alt={row.food_name} className="h-52 w-full object-cover" />
+                </div>
+              ) : null}
+
+              {displayNotes ? (
+                <div className="mt-4 rounded-[18px] bg-cream px-4 py-3">
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-cocoa/50">Diari Harian</p>
+                  <p className="mt-2 text-sm leading-relaxed text-cocoa/80">{displayNotes}</p>
+                </div>
+              ) : null}
+            </Card>
+          );
+        })}
       </div>
 
-      {!sortedRows.length ? <EmptyState text="Belum ada feedback makanan." /> : null}
+      {!sortedRows.length ? <EmptyState text="Belum ada log makan." /> : null}
 
       {activeRecord ? (
         <FormModal
-          title={editing ? 'Kemaskini Feedback' : 'Tambah Feedback'}
+          title={editing ? 'Kemaskini Log' : 'Tambah Log'}
           fields={[
-            { name: 'food_name', label: 'Nama Makanan' },
-            { name: 'introduced_date', label: 'Tarikh Diperkenalkan', type: 'date' },
+            { name: 'age_category', label: 'Kategori Umur', type: 'select', options: ageCategories },
+            { name: 'week', label: 'Minggu', type: 'select', options: weeks },
+            { name: 'introduced_date', label: 'Tarikh', type: 'date' },
+            { name: 'food_name', label: 'Makanan / Menu' },
             { name: 'status', label: 'Status', type: 'select', options: foodStatuses },
             { name: 'reaction', label: 'Reaksi', type: 'select', options: reactions },
-            { name: 'notes', label: 'Nota', type: 'textarea' },
+            { name: 'notes', label: 'Nota / Diari', type: 'textarea' },
             { name: 'image_url', label: 'Gambar', type: 'image' },
           ]}
           initialValues={{ ...(activeRecord as Record<string, string>), introduced_date: toDateInputValue(activeRecord.introduced_date || '') }}
@@ -231,7 +309,17 @@ export function TrackerView({
             setPrefill(null);
           }}
           onSubmit={async (values) => {
-            const saved = await upsert({ id: editing?.id ?? '', ...values } as FoodTracker);
+            const ageCategory = values.age_category || ageCategories[0];
+            const week = values.week || weeks[0];
+            const saved = await upsert({
+              id: editing?.id ?? '',
+              food_name: values.food_name,
+              introduced_date: values.introduced_date,
+              status: values.status,
+              reaction: values.reaction,
+              notes: serializeTrackerNotes(values.notes || '', ageCategory, week),
+              image_url: values.image_url || '',
+            } as FoodTracker);
             if (!saved) return;
             setEditing(null);
             setAdding(false);
@@ -246,15 +334,10 @@ export function TrackerView({
             <div className="flex max-h-[82vh] min-h-0 flex-col overflow-hidden rounded-[32px] bg-cream shadow-soft">
               <div className="flex items-center justify-between border-b border-white px-5 py-4">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-sageDeep">Quick add tracker</p>
-                  <h3 className="text-lg font-bold text-cocoa">Pilih dari menu</h3>
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-sageDeep">Log lama</p>
+                  <h3 className="text-lg font-bold text-cocoa">Pilih MenuPlanner</h3>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setPickerOpen(false)}
-                  className="grid h-10 w-10 place-items-center rounded-full bg-white text-cocoa"
-                  aria-label="Tutup picker"
-                >
+                <button type="button" onClick={() => setPickerOpen(false)} className="grid h-10 w-10 place-items-center rounded-full bg-white text-cocoa" aria-label="Tutup picker">
                   <X size={18} />
                 </button>
               </div>
@@ -293,17 +376,14 @@ export function TrackerView({
                 <div className="space-y-3">
                   {dayGroups.map((group) => {
                     const isOpen = openDay === group.day;
+                    const dayName = weekdayFromDate(group.date);
                     return (
                       <div key={`${group.day}-${group.date}`} className="overflow-hidden rounded-[22px] bg-white shadow-sm">
-                        <button
-                          type="button"
-                          onClick={() => setOpenDay(isOpen ? '' : group.day)}
-                          className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left"
-                        >
+                        <button type="button" onClick={() => setOpenDay(isOpen ? '' : group.day)} className="flex w-full items-center justify-between gap-3 px-4 py-4 text-left">
                           <div className="min-w-0 flex-1">
                             <p className="text-lg font-black text-cocoa">{group.day}</p>
                             <p className="mt-1 text-xs font-semibold text-cocoa/55">
-                              {group.date ? `${formatDisplayDate(group.date)}${weekdayFromDate(group.date) ? ` • ${weekdayFromDate(group.date)}` : ''}` : 'Tarikh belum set'}
+                              {group.date ? `${formatDisplayDate(group.date)}${dayName ? ` - ${dayName}` : ''}` : 'Tarikh belum set'}
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
@@ -320,11 +400,14 @@ export function TrackerView({
                                 type="button"
                                 onClick={() => {
                                   setPrefill({
+                                    age_category: source.age_category,
+                                    week: source.week,
                                     food_name: source.menu,
                                     introduced_date: source.date || todayIso(),
                                     status: 'Selamat',
                                     reaction: 'Belum Dinilai',
                                     notes: '',
+                                    image_url: '',
                                   });
                                   setPickerOpen(false);
                                   setAdding(true);
@@ -333,7 +416,7 @@ export function TrackerView({
                               >
                                 <div className="min-w-0 flex-1">
                                   <p className="break-words text-sm font-bold text-cocoa">{source.menu}</p>
-                                  <p className="mt-1 text-[11px] font-semibold text-cocoa/45">Tap untuk buat feedback</p>
+                                  <p className="mt-1 text-[11px] font-semibold text-cocoa/45">Jadikan log feedback</p>
                                 </div>
                                 <span className="rounded-full bg-sage/18 px-3 py-1 text-[11px] font-bold text-sageDeep">Pilih</span>
                               </button>
@@ -352,5 +435,3 @@ export function TrackerView({
     </div>
   );
 }
-
-

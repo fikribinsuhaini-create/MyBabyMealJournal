@@ -32,7 +32,7 @@ export function GalleryView({
         .sort((left, right) => {
           const leftTime = new Date(left.introduced_date).getTime();
           const rightTime = new Date(right.introduced_date).getTime();
-          return leftTime - rightTime;
+          return rightTime - leftTime;
         }),
     [birthDate, rows]
   );

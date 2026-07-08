@@ -106,6 +106,27 @@ export function TrackerView({
       }),
     [rows]
   );
+  const historyByDay = useMemo(() => {
+    const groups = rows
+      .filter((row) => row.introduced_date && row.food_name)
+      .reduce<Array<{ date: string; items: FoodTracker[] }>>((accumulator, row) => {
+        const existing = accumulator.find((group) => group.date === row.introduced_date);
+        if (existing) {
+          existing.items.push(row);
+          return accumulator;
+        }
+
+        accumulator.push({ date: row.introduced_date, items: [row] });
+        return accumulator;
+      }, [])
+      .sort((left, right) => new Date(left.date).getTime() - new Date(right.date).getTime());
+
+    return groups.map((group, index) => ({
+      ...group,
+      dayNumber: index + 1,
+      menuNames: group.items.map((item) => item.food_name).join(', '),
+    }));
+  }, [rows]);
 
   const activeRecord = editing
     ? ({
@@ -149,6 +170,28 @@ export function TrackerView({
         </div>
       </Card>
 
+      {historyByDay.length ? (
+        <Card className="space-y-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-sageDeep">Food History</p>
+              <h3 className="mt-1 text-lg font-bold text-cocoa">Menu ikut hari</h3>
+            </div>
+            <Pill tone="sage">{historyByDay.length} hari</Pill>
+          </div>
+
+          <div className="space-y-2">
+            {historyByDay.map((group) => (
+              <div key={group.date} className="rounded-[18px] bg-cream px-4 py-3">
+                <p className="text-sm font-black text-cocoa">
+                  Day {group.dayNumber} · {formatDisplayDate(group.date)}
+                </p>
+                <p className="mt-1 break-words text-sm font-semibold leading-relaxed text-cocoa/70">{group.menuNames}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+      ) : null}
       <div className="space-y-3">
         {sortedRows.map((row) => {
           const displayNotes = cleanTrackerNotes(row);

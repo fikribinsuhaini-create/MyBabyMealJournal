@@ -3,6 +3,7 @@ import { AppShell, type TabKey } from './components/AppShell';
 import { useBabyFoodData } from './hooks/useBabyFoodData';
 import { DashboardView } from './views/DashboardView';
 import { GalleryView } from './views/GalleryView';
+import { HistoryView } from './views/HistoryView';
 import { TrackerView } from './views/TrackerView';
 import type { BabyProfile, FoodTracker } from './types';
 
@@ -21,6 +22,7 @@ export default function App() {
       {activeTab === 'tracker' ? (
         <TrackerView rows={data.FoodTracker} upsert={upsertTracker} remove={(id) => remove('FoodTracker', id)} />
       ) : null}
+      {activeTab === 'history' ? <HistoryView rows={data.FoodTracker} /> : null}
       {activeTab === 'gallery' ? <GalleryView rows={data.FoodTracker} birthDate={babyBirthDate} /> : null}
     </AppShell>
   );

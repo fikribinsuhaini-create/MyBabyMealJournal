@@ -1,13 +1,14 @@
-import { Baby, ClipboardList, GalleryVerticalEnd, Home } from 'lucide-react';
+import { Baby, BookOpenText, ClipboardList, GalleryVerticalEnd, Home } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { AppData, SyncState } from '../types';
 import { calculateAge } from '../utils/date';
 
-export type TabKey = 'dashboard' | 'tracker' | 'gallery';
+export type TabKey = 'dashboard' | 'tracker' | 'history' | 'gallery';
 
 const navItems: Array<{ key: TabKey; label: string; icon: typeof Home }> = [
   { key: 'dashboard', label: 'Dashboard', icon: Home },
   { key: 'tracker', label: 'Tracker', icon: ClipboardList },
+  { key: 'history', label: 'History', icon: BookOpenText },
   { key: 'gallery', label: 'Gallery', icon: GalleryVerticalEnd },
 ];
 
@@ -64,7 +65,7 @@ export function AppShell({
       <main className="mx-auto max-w-md px-5 pb-28 pt-5">{children}</main>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/70 bg-white/92 px-3 pb-[calc(env(safe-area-inset-bottom)+10px)] pt-2 shadow-[0_-12px_36px_rgba(111,86,72,0.12)] backdrop-blur">
-        <div className="mx-auto grid max-w-md grid-cols-3 gap-1">
+        <div className="mx-auto grid max-w-md grid-cols-4 gap-1">
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = activeTab === item.key;

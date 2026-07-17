@@ -2,7 +2,7 @@ import { Edit3, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { FormModal } from '../components/FormModal';
 import { Card, EmptyState, IconButton, Pill, SectionTitle } from '../components/Ui';
-import { ageCategories, foodStatuses, reactions, weeks } from '../constants';
+import { ageCategories, foodStatuses, reactions, trackerMealTimes, weeks } from '../constants';
 import type { FoodTracker } from '../types';
 import { formatDisplayDate, todayIso, toDateInputValue } from '../utils/date';
 
@@ -12,6 +12,7 @@ const META_END = ']]';
 type TrackerFormValues = {
   age_category?: string;
   week?: string;
+  meal_time?: string;
 };
 
 function statusTone(status: string) {
@@ -29,31 +30,32 @@ function weekdayFromDate(dateValue: string) {
 
 function parseTrackerNotes(notes = '') {
   if (!notes.startsWith(META_START)) {
-    return { age_category: '', week: '', cleanNotes: notes };
+    return { age_category: '', week: '', meal_time: '', cleanNotes: notes };
   }
 
   const closeIndex = notes.indexOf(META_END);
   if (closeIndex === -1) {
-    return { age_category: '', week: '', cleanNotes: notes };
+    return { age_category: '', week: '', meal_time: '', cleanNotes: notes };
   }
 
   const rawMeta = notes.slice(META_START.length, closeIndex);
   const cleanNotes = notes.slice(closeIndex + META_END.length).replace(/^\n+/, '');
 
   try {
-    const meta = JSON.parse(rawMeta) as Partial<Record<'age_category' | 'week', string>>;
+    const meta = JSON.parse(rawMeta) as Partial<Record<'age_category' | 'week' | 'meal_time', string>>;
     return {
       age_category: meta.age_category ?? '',
       week: meta.week ?? '',
+      meal_time: meta.meal_time ?? '',
       cleanNotes,
     };
   } catch {
-    return { age_category: '', week: '', cleanNotes };
+    return { age_category: '', week: '', meal_time: '', cleanNotes };
   }
 }
 
-function serializeTrackerNotes(notes: string, ageCategory: string, week: string) {
-  const meta = JSON.stringify({ age_category: ageCategory, week });
+function serializeTrackerNotes(notes: string, ageCategory: string, week: string, mealTime: string) {
+  const meta = JSON.stringify({ age_category: ageCategory, week, meal_time: mealTime });
   const cleanNotes = notes.trim();
   return cleanNotes ? `${META_START}${meta}${META_END}\n${cleanNotes}` : `${META_START}${meta}${META_END}`;
 }
@@ -66,14 +68,19 @@ function trackerWeek(row: FoodTracker) {
   return parseTrackerNotes(row.notes).week || 'Minggu belum set';
 }
 
+function trackerMealTime(row: FoodTracker) {
+  return parseTrackerNotes(row.notes).meal_time || 'Waktu belum set';
+}
+
 function cleanTrackerNotes(row: FoodTracker) {
   return parseTrackerNotes(row.notes).cleanNotes;
 }
 
-function createDefaultRecord(activeAge: string, activeWeek: string): Partial<FoodTracker> & TrackerFormValues {
+function createDefaultRecord(activeAge: string, activeWeek: string, activeMealTime: string): Partial<FoodTracker> & TrackerFormValues {
   return {
     age_category: activeAge,
     week: activeWeek,
+    meal_time: activeMealTime,
     introduced_date: todayIso(),
     status: foodStatuses[0],
     reaction: reactions[0],
@@ -96,6 +103,7 @@ export function TrackerView({
   const [prefill, setPrefill] = useState<(Partial<FoodTracker> & TrackerFormValues) | null>(null);
   const [activeAge] = useState(ageCategories[0]);
   const [activeWeek] = useState(weeks[0]);
+  const [activeMealTime] = useState(trackerMealTimes[0]);
 
   const sortedRows = useMemo(
     () =>
@@ -112,10 +120,11 @@ export function TrackerView({
         ...editing,
         age_category: trackerAge(editing) === 'Umur belum set' ? ageCategories[0] : trackerAge(editing),
         week: trackerWeek(editing) === 'Minggu belum set' ? weeks[0] : trackerWeek(editing),
+        meal_time: trackerMealTime(editing) === 'Waktu belum set' ? trackerMealTimes[0] : trackerMealTime(editing),
         notes: cleanTrackerNotes(editing),
       } as Partial<FoodTracker> & TrackerFormValues)
     : adding
-      ? prefill ?? createDefaultRecord(activeAge, activeWeek)
+      ? prefill ?? createDefaultRecord(activeAge, activeWeek, activeMealTime)
       : null;
 
   return (
@@ -154,6 +163,7 @@ export function TrackerView({
           const displayNotes = cleanTrackerNotes(row);
           const displayAge = trackerAge(row);
           const displayWeek = trackerWeek(row);
+          const displayMealTime = trackerMealTime(row);
           const dayName = weekdayFromDate(row.introduced_date);
 
           return (
@@ -166,7 +176,7 @@ export function TrackerView({
                     {dayName ? <Pill tone="peach">{dayName}</Pill> : null}
                   </div>
                   <h3 className="break-words text-xl font-bold leading-tight">{row.food_name}</h3>
-                  <p className="mt-1 text-sm text-cocoa/55">{displayAge} - {displayWeek}</p>
+                  <p className="mt-1 text-sm text-cocoa/55">{displayAge} - {displayWeek} - {displayMealTime}</p>
                 </div>
                 <div className="flex gap-2">
                   <IconButton label="Kemaskini" onClick={() => setEditing(row)}>
@@ -179,7 +189,7 @@ export function TrackerView({
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
-                <Pill tone={row.reaction.includes('Ada Reaksi') ? 'berry' : row.reaction === 'Belum Dinilai' ? 'butter' : 'peach'}>{row.reaction}</Pill>
+                <Pill tone={row.reaction.includes('Ada Reaksi') ? 'berry' : row.reaction === 'Belum Dinilai' || row.reaction.includes('Tak Pasti') ? 'butter' : 'peach'}>{row.reaction}</Pill>
                 {displayNotes ? <Pill tone="sage">Ada catatan</Pill> : null}
                 {row.image_urls?.length ? <Pill tone="sage">{row.image_urls.length} gambar</Pill> : null}
               </div>
@@ -215,6 +225,7 @@ export function TrackerView({
             { name: 'week', label: 'Minggu', type: 'select', options: weeks },
             { name: 'introduced_date', label: 'Tarikh', type: 'date' },
             { name: 'food_name', label: 'Makanan / Menu' },
+            { name: 'meal_time', label: 'Waktu Makan', type: 'select', options: trackerMealTimes },
             { name: 'status', label: 'Status', type: 'select', options: foodStatuses },
             { name: 'reaction', label: 'Reaksi', type: 'select', options: reactions },
             { name: 'notes', label: 'Nota / Diari', type: 'textarea' },
@@ -233,6 +244,7 @@ export function TrackerView({
           onSubmit={async (values) => {
             const ageCategory = values.age_category || ageCategories[0];
             const week = values.week || weeks[0];
+            const mealTime = values.meal_time || trackerMealTimes[0];
             let imageUrls: string[] = [];
             try {
               const parsed = JSON.parse(values.image_urls || '[]');
@@ -246,7 +258,7 @@ export function TrackerView({
               introduced_date: values.introduced_date,
               status: values.status,
               reaction: values.reaction,
-              notes: serializeTrackerNotes(values.notes || '', ageCategory, week),
+              notes: serializeTrackerNotes(values.notes || '', ageCategory, week, mealTime),
               image_urls: imageUrls,
             } as FoodTracker);
             if (!saved) return;

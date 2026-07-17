@@ -1,4 +1,4 @@
-export type Reaction = 'Belum Dinilai' | '❤️ Sangat Suka' | '😊 Suka' | '😐 Biasa' | '😖 Tidak Suka' | '⚠️ Ada Reaksi';
+export type Reaction = 'Belum Dinilai' | '❤️ Sangat Suka' | '😊 Suka' | '😐 Biasa' | '🤔 Tak Pasti' | '😖 Tidak Suka' | '⚠️ Ada Reaksi';
 export type FoodStatus = 'Selamat' | 'Perlu Dipantau' | 'Alergi';
 export type AgeCategory =
   | '6 Bulan'

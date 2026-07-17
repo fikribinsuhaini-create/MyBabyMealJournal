@@ -228,7 +228,12 @@ export function TrackerView({
             { name: 'meal_time', label: 'Waktu Makan', type: 'select', options: trackerMealTimes },
             { name: 'status', label: 'Status', type: 'select', options: foodStatuses },
             { name: 'reaction', label: 'Reaksi', type: 'select', options: reactions },
-            { name: 'notes', label: 'Nota / Diari', type: 'textarea' },
+            {
+              name: 'notes',
+              label: 'Nota / Diari',
+              type: 'textarea',
+              placeholder: (values) => (values.reaction === '🤔 Tak Pasti' ? 'Tak Pasti' : undefined),
+            },
             { name: 'image_urls', label: 'Gambar', type: 'image', multiple: true },
           ]}
           initialValues={{

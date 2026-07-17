@@ -8,7 +8,7 @@ export type FieldConfig = {
   label: string;
   type?: 'text' | 'date' | 'url' | 'textarea' | 'select' | 'image';
   options?: string[];
-  placeholder?: string;
+  placeholder?: string | ((values: Record<string, string>) => string | undefined);
   multiple?: boolean;
 };
 
@@ -120,7 +120,9 @@ export function FormModal({
             }
           }}
         >
-          {fields.map((field) => (
+          {fields.map((field) => {
+            const resolvedPlaceholder = typeof field.placeholder === 'function' ? field.placeholder(values) : field.placeholder;
+            return (
             <label key={field.name} className="block">
               <span className="mb-2 block text-sm font-semibold text-cocoa/80">{field.label}</span>
               {field.type === 'textarea' ? (
@@ -128,7 +130,7 @@ export function FormModal({
                   value={values[field.name] ?? ''}
                   onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))}
                   rows={4}
-                  placeholder={field.placeholder}
+                  placeholder={resolvedPlaceholder}
                   className="min-h-[110px] w-full rounded-[20px] border border-oat bg-white px-4 py-3 text-sm outline-none transition focus:border-peachDeep focus:ring-4 focus:ring-peach/25"
                 />
               ) : field.type === 'image' && field.multiple ? (
@@ -187,7 +189,7 @@ export function FormModal({
                     type="url"
                     value={values[field.name] ?? ''}
                     onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))}
-                    placeholder={field.placeholder ?? 'URL gambar atau upload dari telefon'}
+                    placeholder={resolvedPlaceholder ?? 'URL gambar atau upload dari telefon'}
                     className="h-12 w-full rounded-[20px] border border-oat bg-white px-4 text-sm outline-none transition focus:border-peachDeep focus:ring-4 focus:ring-peach/25"
                   />
                   <input
@@ -231,12 +233,13 @@ export function FormModal({
                   type={field.type ?? 'text'}
                   value={values[field.name] ?? ''}
                   onChange={(event) => setValues((current) => ({ ...current, [field.name]: event.target.value }))}
-                  placeholder={field.placeholder}
+                  placeholder={resolvedPlaceholder}
                   className="h-12 w-full rounded-[20px] border border-oat bg-white px-4 text-sm outline-none transition focus:border-peachDeep focus:ring-4 focus:ring-peach/25"
                 />
               )}
             </label>
-          ))}
+            );
+          })}
 
           <div className="sticky bottom-0 grid grid-cols-2 gap-3 bg-cream pt-3">
             <button type="button" onClick={onClose} disabled={isSubmitting} className="h-12 rounded-[18px] bg-white font-semibold text-cocoa shadow-sm disabled:opacity-60">

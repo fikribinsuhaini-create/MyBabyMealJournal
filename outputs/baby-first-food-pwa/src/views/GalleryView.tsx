@@ -49,6 +49,19 @@ export function GalleryView({
     [activeAge, entries]
   );
 
+  const dateGroups = useMemo(() => {
+    const groups: { date: string; ageLabel: string; entries: GalleryEntry[] }[] = [];
+    filteredEntries.forEach((entry) => {
+      const lastGroup = groups[groups.length - 1];
+      if (lastGroup && lastGroup.date === entry.introduced_date) {
+        lastGroup.entries.push(entry);
+      } else {
+        groups.push({ date: entry.introduced_date, ageLabel: entry.ageLabel, entries: [entry] });
+      }
+    });
+    return groups;
+  }, [filteredEntries]);
+
   return (
     <div className="space-y-4">
       <SectionTitle eyebrow="Journey" title="Gallery bayi" />
@@ -68,21 +81,27 @@ export function GalleryView({
         ))}
       </div>
 
-      {filteredEntries.length ? (
-        <div className="grid grid-cols-2 gap-3">
-          {filteredEntries.map((row) => (
-            <button
-              key={row.photoKey}
-              type="button"
-              onClick={() => setActiveImage(row)}
-              className="overflow-hidden rounded-[24px] bg-white text-left shadow-soft"
-            >
-              <img src={row.imageUrl} alt={row.food_name} className="h-40 w-full object-cover" loading="lazy" />
-              <div className="space-y-2 px-3 py-3">
-                <Pill tone="sage">{row.ageLabel}</Pill>
-                <p className="text-sm font-semibold text-cocoa/75">{formatDisplayDate(row.introduced_date)}</p>
+      {dateGroups.length ? (
+        <div className="space-y-5">
+          {dateGroups.map((group) => (
+            <div key={group.date} className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <p className="text-sm font-bold text-cocoa/70">{formatDisplayDate(group.date)}</p>
+                <Pill tone="sage">{group.ageLabel}</Pill>
               </div>
-            </button>
+              <div className="grid grid-cols-2 gap-3">
+                {group.entries.map((row) => (
+                  <button
+                    key={row.photoKey}
+                    type="button"
+                    onClick={() => setActiveImage(row)}
+                    className="overflow-hidden rounded-[24px] bg-white text-left shadow-soft"
+                  >
+                    <img src={row.imageUrl} alt={row.food_name} className="h-40 w-full object-cover" loading="lazy" />
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
       ) : (

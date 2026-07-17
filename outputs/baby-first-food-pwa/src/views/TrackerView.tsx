@@ -1,5 +1,5 @@
 import { Edit3, Plus, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { FormModal } from '../components/FormModal';
 import { Card, EmptyState, IconButton, Pill, SectionTitle } from '../components/Ui';
 import { ageCategories, foodStatuses, reactions, trackerMealTimes, weeks } from '../constants';
@@ -93,10 +93,14 @@ export function TrackerView({
   rows,
   upsert,
   remove,
+  openAddOnMount,
+  onOpenAddConsumed,
 }: {
   rows: FoodTracker[];
   upsert: (row: FoodTracker) => Promise<boolean>;
   remove: (id: string) => Promise<void>;
+  openAddOnMount?: boolean;
+  onOpenAddConsumed?: () => void;
 }) {
   const [editing, setEditing] = useState<FoodTracker | null>(null);
   const [adding, setAdding] = useState(false);
@@ -104,6 +108,15 @@ export function TrackerView({
   const [activeAge] = useState(ageCategories[0]);
   const [activeWeek] = useState(weeks[0]);
   const [activeMealTime] = useState(trackerMealTimes[0]);
+
+  useEffect(() => {
+    if (!openAddOnMount) return;
+    setEditing(null);
+    setPrefill(null);
+    setAdding(true);
+    onOpenAddConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const sortedRows = useMemo(
     () =>

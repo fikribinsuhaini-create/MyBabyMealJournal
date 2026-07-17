@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react';
 import { useMemo } from 'react';
 import { Card, Pill } from '../components/Ui';
 import type { AppData, BabyProfile } from '../types';
@@ -16,9 +17,11 @@ function cleanNotes(notes = '') {
 export function DashboardView({
   data,
   upsert,
+  onQuickAddTracker,
 }: {
   data: AppData;
   upsert: (sheet: 'BabyProfile', row: BabyProfile) => Promise<void>;
+  onQuickAddTracker?: () => void;
 }) {
   void upsert;
 
@@ -74,6 +77,15 @@ export function DashboardView({
           </div>
         </div>
       </Card>
+
+      <button
+        type="button"
+        onClick={onQuickAddTracker}
+        className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-peach text-sm font-bold text-white shadow-soft"
+      >
+        <Plus size={18} />
+        Tambah Log Tracker
+      </button>
 
       <div className="grid grid-cols-3 gap-3">
         {stats.map(([label, value]) => (

@@ -9,7 +9,7 @@ import { formatDisplayDate, todayIso, toDateInputValue } from '../utils/date';
 const META_START = '[[baby-food-meta:';
 const META_END = ']]';
 
-type TrackerFormValues = Record<string, string> & {
+type TrackerFormValues = {
   age_category?: string;
   week?: string;
 };
@@ -78,7 +78,7 @@ function createDefaultRecord(activeAge: string, activeWeek: string): Partial<Foo
     status: foodStatuses[0],
     reaction: reactions[0],
     notes: '',
-    image_url: '',
+    image_urls: [],
   };
 }
 
@@ -181,12 +181,16 @@ export function TrackerView({
               <div className="mt-4 flex flex-wrap gap-2">
                 <Pill tone={row.reaction.includes('Ada Reaksi') ? 'berry' : row.reaction === 'Belum Dinilai' ? 'butter' : 'peach'}>{row.reaction}</Pill>
                 {displayNotes ? <Pill tone="sage">Ada catatan</Pill> : null}
-                {row.image_url ? <Pill tone="sage">Ada gambar</Pill> : null}
+                {row.image_urls?.length ? <Pill tone="sage">{row.image_urls.length} gambar</Pill> : null}
               </div>
 
-              {row.image_url ? (
-                <div className="mt-4 overflow-hidden rounded-[20px] bg-cream">
-                  <img src={row.image_url} alt={row.food_name} className="h-52 w-full object-cover" />
+              {row.image_urls?.length ? (
+                <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
+                  {row.image_urls.map((url, index) => (
+                    <div key={`${row.id}-${index}`} className="h-28 w-28 shrink-0 overflow-hidden rounded-[18px] bg-cream">
+                      <img src={url} alt={row.food_name} className="h-full w-full object-cover" />
+                    </div>
+                  ))}
                 </div>
               ) : null}
 
@@ -214,9 +218,13 @@ export function TrackerView({
             { name: 'status', label: 'Status', type: 'select', options: foodStatuses },
             { name: 'reaction', label: 'Reaksi', type: 'select', options: reactions },
             { name: 'notes', label: 'Nota / Diari', type: 'textarea' },
-            { name: 'image_url', label: 'Gambar', type: 'image' },
+            { name: 'image_urls', label: 'Gambar', type: 'image', multiple: true },
           ]}
-          initialValues={{ ...(activeRecord as Record<string, string>), introduced_date: toDateInputValue(activeRecord.introduced_date || '') }}
+          initialValues={{
+            ...(activeRecord as unknown as Record<string, string>),
+            introduced_date: toDateInputValue(activeRecord.introduced_date || ''),
+            image_urls: JSON.stringify(activeRecord.image_urls ?? []),
+          }}
           onClose={() => {
             setEditing(null);
             setAdding(false);
@@ -225,6 +233,13 @@ export function TrackerView({
           onSubmit={async (values) => {
             const ageCategory = values.age_category || ageCategories[0];
             const week = values.week || weeks[0];
+            let imageUrls: string[] = [];
+            try {
+              const parsed = JSON.parse(values.image_urls || '[]');
+              imageUrls = Array.isArray(parsed) ? parsed.filter((url): url is string => typeof url === 'string' && url.length > 0) : [];
+            } catch {
+              imageUrls = [];
+            }
             const saved = await upsert({
               id: editing?.id ?? '',
               food_name: values.food_name,
@@ -232,7 +247,7 @@ export function TrackerView({
               status: values.status,
               reaction: values.reaction,
               notes: serializeTrackerNotes(values.notes || '', ageCategory, week),
-              image_url: values.image_url || '',
+              image_urls: imageUrls,
             } as FoodTracker);
             if (!saved) return;
             setEditing(null);

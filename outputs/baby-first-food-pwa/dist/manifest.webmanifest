@@ -1,7 +1,7 @@
 {
-  "name": "Baby First Food Planner",
-  "short_name": "First Food",
-  "description": "Rancang menu, resepi dan rekod makanan pertama bayi.",
+  "name": "Asytar Food Journal",
+  "short_name": "Asytar Food Journal",
+  "description": "Jurnal pemakanan bayi Asytar dari hari pertama hingga seterusnya.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -23,3 +23,5 @@
     }
   ]
 }
+
+

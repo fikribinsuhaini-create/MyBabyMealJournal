@@ -9,7 +9,17 @@ export type FieldConfig = {
   type?: 'text' | 'date' | 'url' | 'textarea' | 'select' | 'image';
   options?: string[];
   placeholder?: string;
+  multiple?: boolean;
 };
+
+function parseImageList(value: string) {
+  try {
+    const parsed = JSON.parse(value || '[]');
+    return Array.isArray(parsed) ? (parsed as string[]) : [];
+  } catch {
+    return [];
+  }
+}
 
 async function resizeImage(file: File) {
   const dataUrl = await new Promise<string>((resolve, reject) => {
@@ -121,6 +131,55 @@ export function FormModal({
                   placeholder={field.placeholder}
                   className="min-h-[110px] w-full rounded-[20px] border border-oat bg-white px-4 py-3 text-sm outline-none transition focus:border-peachDeep focus:ring-4 focus:ring-peach/25"
                 />
+              ) : field.type === 'image' && field.multiple ? (
+                <div className="space-y-3">
+                  {parseImageList(values[field.name] ?? '').length ? (
+                    <div className="grid grid-cols-3 gap-2">
+                      {parseImageList(values[field.name] ?? '').map((url, index) => (
+                        <div key={`${field.name}-${index}`} className="relative">
+                          <img src={url} alt="" className="h-24 w-full rounded-[16px] object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const nextUrls = parseImageList(values[field.name] ?? '').filter((_, itemIndex) => itemIndex !== index);
+                              setValues((current) => ({ ...current, [field.name]: JSON.stringify(nextUrls) }));
+                            }}
+                            className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-cocoa/70 text-white"
+                            aria-label="Buang gambar"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    disabled={isProcessingImage || isSubmitting}
+                    onChange={async (event) => {
+                      const files = Array.from(event.target.files ?? []);
+                      if (!files.length) return;
+                      event.target.value = '';
+                      setIsProcessingImage(true);
+                      setFieldError('');
+                      try {
+                        const resized = await Promise.all(files.map((file) => resizeImage(file)));
+                        const nextUrls = [...parseImageList(values[field.name] ?? ''), ...resized];
+                        setValues((current) => ({ ...current, [field.name]: JSON.stringify(nextUrls) }));
+                      } catch (error) {
+                        const message = error instanceof Error ? error.message : 'Gagal proses gambar.';
+                        setFieldError(message);
+                      } finally {
+                        setIsProcessingImage(false);
+                      }
+                    }}
+                    className="w-full rounded-[20px] border border-dashed border-oat bg-white px-4 py-3 text-sm file:mr-3 file:rounded-full file:border-0 file:bg-peach file:px-4 file:py-2 file:font-semibold file:text-white"
+                  />
+                  {isProcessingImage ? <p className="text-xs font-semibold text-cocoa/55">Memproses gambar...</p> : null}
+                  {fieldError ? <p className="text-xs font-semibold text-berry">{fieldError}</p> : null}
+                </div>
               ) : field.type === 'image' ? (
                 <div className="space-y-3">
                   {values[field.name] ? <img src={values[field.name]} alt="" className="h-36 w-full rounded-[20px] object-cover" /> : null}

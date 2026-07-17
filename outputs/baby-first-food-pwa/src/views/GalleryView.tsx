@@ -11,6 +11,8 @@ function buildAgeLabel(birthDate: string, entryDate: string) {
   return `${Math.max(months, 0)} Bulan`;
 }
 
+type GalleryEntry = FoodTracker & { photoKey: string; imageUrl: string; ageLabel: string };
+
 export function GalleryView({
   rows,
   birthDate,
@@ -19,16 +21,19 @@ export function GalleryView({
   birthDate: string;
 }) {
   const [activeAge, setActiveAge] = useState('Semua');
-  const [activeImage, setActiveImage] = useState<FoodTracker | null>(null);
+  const [activeImage, setActiveImage] = useState<GalleryEntry | null>(null);
 
   const entries = useMemo(
     () =>
       rows
-        .filter((row) => row.image_url)
-        .map((row) => ({
-          ...row,
-          ageLabel: buildAgeLabel(birthDate, row.introduced_date),
-        }))
+        .flatMap((row) =>
+          (row.image_urls ?? []).map((imageUrl, index) => ({
+            ...row,
+            photoKey: `${row.id}-${index}`,
+            imageUrl,
+            ageLabel: buildAgeLabel(birthDate, row.introduced_date),
+          }))
+        )
         .sort((left, right) => {
           const leftTime = new Date(left.introduced_date).getTime();
           const rightTime = new Date(right.introduced_date).getTime();
@@ -67,12 +72,12 @@ export function GalleryView({
         <div className="grid grid-cols-2 gap-3">
           {filteredEntries.map((row) => (
             <button
-              key={row.id}
+              key={row.photoKey}
               type="button"
               onClick={() => setActiveImage(row)}
               className="overflow-hidden rounded-[24px] bg-white text-left shadow-soft"
             >
-              <img src={row.image_url} alt={row.food_name} className="h-40 w-full object-cover" loading="lazy" />
+              <img src={row.imageUrl} alt={row.food_name} className="h-40 w-full object-cover" loading="lazy" />
               <div className="space-y-2 px-3 py-3">
                 <Pill tone="sage">{row.ageLabel}</Pill>
                 <p className="text-sm font-semibold text-cocoa/75">{formatDisplayDate(row.introduced_date)}</p>
@@ -104,7 +109,7 @@ export function GalleryView({
                   <X size={18} />
                 </button>
               </div>
-              <img src={activeImage.image_url} alt={activeImage.food_name} className="max-h-[70vh] w-full bg-white object-contain" />
+              <img src={activeImage.imageUrl} alt={activeImage.food_name} className="max-h-[70vh] w-full bg-white object-contain" />
             </div>
           </div>
         </div>

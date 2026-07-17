@@ -25,7 +25,7 @@ export function DashboardView({
   const todayDate = formatDisplayDate(todayIso());
   const logCount = data.FoodTracker.length;
   const reactionCount = data.FoodTracker.filter((item) => item.reaction && item.reaction !== 'Belum Dinilai').length;
-  const galleryCount = data.FoodTracker.filter((item) => item.image_url).length;
+  const galleryCount = data.FoodTracker.reduce((total, item) => total + (item.image_urls?.length ?? 0), 0);
 
   const latestTracker = useMemo(
     () =>

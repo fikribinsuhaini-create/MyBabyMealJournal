@@ -43,8 +43,30 @@ create table if not exists public.food_tracker (
   status text not null default '',
   reaction text not null default '',
   notes text not null default '',
-  image_url text not null default ''
+  image_urls text[] not null default '{}'
 );
+
+-- Migrate existing single-photo installs to the multi-photo column.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'food_tracker' and column_name = 'image_url'
+  ) then
+    if not exists (
+      select 1 from information_schema.columns
+      where table_schema = 'public' and table_name = 'food_tracker' and column_name = 'image_urls'
+    ) then
+      alter table public.food_tracker add column image_urls text[] not null default '{}';
+    end if;
+
+    update public.food_tracker
+    set image_urls = array[image_url]
+    where coalesce(image_url, '') <> '' and coalesce(array_length(image_urls, 1), 0) = 0;
+
+    alter table public.food_tracker drop column image_url;
+  end if;
+end $$;
 
 alter table public.baby_profiles enable row level security;
 alter table public.menu_planner enable row level security;

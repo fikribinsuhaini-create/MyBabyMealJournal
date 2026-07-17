@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { bootstrapSupabase, deleteSupabaseRow, fetchSupabaseData, seedSupabaseData, supabaseEnabled, upsertSupabaseRow } from '../data/supabase';
+import type { RemoteRow } from '../data/supabase';
 import { createId, loadLocalData, replaceSheet, saveLocalData } from '../data/localStore';
 import type { AppData, SheetName, SyncState } from '../types';
 import { normalizeFeedingSchedule } from '../utils/schedule';
@@ -54,8 +55,10 @@ function rowMatchesRemote<T extends SheetName>(sheet: T, localRow: RowFor<T>, re
   if (sheet === 'FoodTracker') {
     const nextLocal = localRow as RowFor<'FoodTracker'>;
     const nextRemote = remoteRow as RowFor<'FoodTracker'>;
-    const wantsUploadedImage = Boolean(nextLocal.image_url) && nextLocal.image_url.startsWith('data:image/');
-    const remoteHasUploadedImage = Boolean(nextRemote.image_url) && !nextRemote.image_url.startsWith('data:image/');
+    const localUrls = nextLocal.image_urls ?? [];
+    const remoteUrls = nextRemote.image_urls ?? [];
+    const wantsUploadedImages = localUrls.some((url) => url.startsWith('data:image/'));
+    const remoteHasNoPendingUploads = remoteUrls.every((url) => !url.startsWith('data:image/'));
 
     return (
       nextLocal.food_name === nextRemote.food_name &&
@@ -63,7 +66,8 @@ function rowMatchesRemote<T extends SheetName>(sheet: T, localRow: RowFor<T>, re
       nextLocal.status === nextRemote.status &&
       nextLocal.reaction === nextRemote.reaction &&
       nextLocal.notes === nextRemote.notes &&
-      (wantsUploadedImage ? remoteHasUploadedImage : nextLocal.image_url === nextRemote.image_url)
+      localUrls.length === remoteUrls.length &&
+      (wantsUploadedImages ? remoteHasNoPendingUploads : localUrls.every((url, index) => url === remoteUrls[index]))
     );
   }
 
@@ -139,7 +143,7 @@ export function useBabyFoodData() {
         return false;
       }
 
-      if (trackerRow && typeof trackerRow.image_url === 'string' && trackerRow.image_url.length > 50000) {
+      if (trackerRow?.image_urls?.some((url) => url.length > 50000)) {
         setSyncState('error');
         setSyncMessage('Gambar tracker terlalu besar. Pilih gambar lebih kecil.');
         return false;
@@ -160,7 +164,7 @@ export function useBabyFoodData() {
       try {
         setSyncMessage('');
         setSyncState('syncing');
-        const remoteRow = (await upsertSupabaseRow(sheet, finalRow as Record<string, string>)) as RowFor<T>;
+        const remoteRow = (await upsertSupabaseRow(sheet, finalRow as unknown as RemoteRow)) as RowFor<T>;
         const remote = await fetchSupabaseData();
         const remoteRows = (remote?.[sheet] ?? []) as RowFor<T>[];
 

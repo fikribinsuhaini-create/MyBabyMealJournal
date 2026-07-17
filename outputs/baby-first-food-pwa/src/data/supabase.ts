@@ -1,5 +1,7 @@
 import type { AppData, Recipe, FoodTracker, SheetName } from '../types';
 
+export type RemoteRow = Record<string, string | string[]>;
+
 const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL ?? '').trim().replace(/\/+$/, '');
 const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY ?? '').trim();
 const storageBucket = (import.meta.env.VITE_SUPABASE_STORAGE_BUCKET ?? 'baby-food-images').trim();
@@ -46,8 +48,12 @@ async function readJson<T>(response: Response): Promise<T> {
 }
 
 function normalizeTextRow<T extends Record<string, unknown>>(row: T) {
-  return Object.entries(row).reduce<Record<string, string>>((accumulator, [key, value]) => {
-    accumulator[key] = value === null || value === undefined ? '' : String(value);
+  return Object.entries(row).reduce<Record<string, unknown>>((accumulator, [key, value]) => {
+    if (Array.isArray(value)) {
+      accumulator[key] = value.map((item) => String(item));
+    } else {
+      accumulator[key] = value === null || value === undefined ? '' : String(value);
+    }
     return accumulator;
   }, {}) as T;
 }
@@ -120,11 +126,11 @@ function encodeStoragePath(path: string) {
     .join('/');
 }
 
-async function uploadImage(dataUrl: string, folder: 'tracker' | 'recipes', id: string) {
+async function uploadImage(dataUrl: string, folder: 'tracker' | 'recipes', fileId: string) {
   requireSupabase();
   const { mimeType, base64, extension } = parseDataUrl(dataUrl);
   const bytes = base64ToBytes(base64);
-  const path = `${folder}/${id}.${extension}`;
+  const path = `${folder}/${fileId}.${extension}`;
   const response = await fetch(`${supabaseUrl}/storage/v1/object/${encodeStoragePath(`${storageBucket}/${path}`)}`, {
     method: 'POST',
     headers: apiHeaders({
@@ -142,14 +148,22 @@ async function uploadImage(dataUrl: string, folder: 'tracker' | 'recipes', id: s
   return `${supabaseUrl}/storage/v1/object/public/${encodeStoragePath(`${storageBucket}/${path}`)}`;
 }
 
-async function normalizeRowForRemote<T extends Record<string, string>>(sheet: SheetName, row: T) {
-  if (sheet === 'FoodTracker' && row.image_url?.startsWith('data:image/')) {
-    const imageUrl = await uploadImage(row.image_url, 'tracker', row.id);
-    return { ...row, image_url: imageUrl };
+async function normalizeRowForRemote<T extends RemoteRow>(sheet: SheetName, row: T): Promise<T> {
+  if (sheet === 'FoodTracker') {
+    const imageUrls = Array.isArray(row.image_urls) ? row.image_urls : [];
+    if (imageUrls.some((url) => url.startsWith('data:image/'))) {
+      const uploaded = await Promise.all(
+        imageUrls.map((url, index) =>
+          url.startsWith('data:image/') ? uploadImage(url, 'tracker', `${row.id}-${index}`) : Promise.resolve(url)
+        )
+      );
+      return { ...row, image_urls: uploaded };
+    }
+    return row;
   }
 
-  if (sheet === 'Recipes' && row.image_url?.startsWith('data:image/')) {
-    const imageUrl = await uploadImage(row.image_url, 'recipes', row.id);
+  if (sheet === 'Recipes' && typeof row.image_url === 'string' && row.image_url.startsWith('data:image/')) {
+    const imageUrl = await uploadImage(row.image_url, 'recipes', row.id as string);
     return { ...row, image_url: imageUrl };
   }
 
@@ -179,7 +193,7 @@ export async function fetchSupabaseData(): Promise<Partial<AppData> | null> {
   };
 }
 
-export async function upsertSupabaseRow(sheet: SheetName, row: Record<string, string>) {
+export async function upsertSupabaseRow(sheet: SheetName, row: RemoteRow) {
   const finalRow = await normalizeRowForRemote(sheet, row);
   await upsertTableRows(tableMap[sheet], [finalRow]);
   return finalRow;

@@ -31,10 +31,22 @@ create table if not exists public.recipes (
   image_url text not null default '',
   age_category text not null default '',
   category text not null default '',
+  author text not null default '',
   ingredients text not null default '',
   instructions text not null default '',
   notes text not null default ''
 );
+
+-- Add the menu-planner "created by" tag to installs created before this column existed.
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'recipes' and column_name = 'author'
+  ) then
+    alter table public.recipes add column author text not null default '';
+  end if;
+end $$;
 
 create table if not exists public.food_tracker (
   id text primary key,

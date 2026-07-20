@@ -1,9 +1,10 @@
-import { Edit3, Plus, Trash2 } from 'lucide-react';
+import { Edit3, ListPlus, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { FormModal } from '../components/FormModal';
+import { MenuPicker } from '../components/MenuPicker';
 import { Card, EmptyState, IconButton, Pill, SectionTitle } from '../components/Ui';
 import { ageCategories, foodStatuses, reactions, trackerMealTimes, weeks } from '../constants';
-import type { FoodTracker } from '../types';
+import type { FoodTracker, Recipe } from '../types';
 import { formatDisplayDate, todayIso, toDateInputValue } from '../utils/date';
 
 const META_START = '[[baby-food-meta:';
@@ -91,12 +92,14 @@ function createDefaultRecord(activeAge: string, activeWeek: string, activeMealTi
 
 export function TrackerView({
   rows,
+  menuRows,
   upsert,
   remove,
   openAddOnMount,
   onOpenAddConsumed,
 }: {
   rows: FoodTracker[];
+  menuRows: Recipe[];
   upsert: (row: FoodTracker) => Promise<boolean>;
   remove: (id: string) => Promise<void>;
   openAddOnMount?: boolean;
@@ -104,10 +107,22 @@ export function TrackerView({
 }) {
   const [editing, setEditing] = useState<FoodTracker | null>(null);
   const [adding, setAdding] = useState(false);
+  const [pickingMenu, setPickingMenu] = useState(false);
   const [prefill, setPrefill] = useState<(Partial<FoodTracker> & TrackerFormValues) | null>(null);
   const [activeAge] = useState(ageCategories[0]);
   const [activeWeek] = useState(weeks[0]);
   const [activeMealTime] = useState(trackerMealTimes[0]);
+
+  const pickMenu = (menu: Recipe) => {
+    setPickingMenu(false);
+    setEditing(null);
+    setPrefill({
+      ...createDefaultRecord(menu.age_category || activeAge, activeWeek, activeMealTime),
+      food_name: menu.title,
+      notes: `Bahan: ${menu.ingredients}\nCara Penyediaan: ${menu.instructions}`,
+    });
+    setAdding(true);
+  };
 
   useEffect(() => {
     if (!openAddOnMount) return;
@@ -146,17 +161,29 @@ export function TrackerView({
         eyebrow="Jurnal Makan"
         title="Log & feedback"
         action={
-          <button
-            type="button"
-            onClick={() => {
-              setPrefill(null);
-              setAdding(true);
-            }}
-            className="flex h-11 items-center gap-2 rounded-full bg-peach px-4 text-sm font-bold text-white shadow-soft"
-          >
-            <Plus size={18} />
-            Tambah
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setPickingMenu(true)}
+              aria-label="Pilih dari Menu"
+              title="Pilih dari Menu"
+              className="flex h-11 items-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-cocoa shadow-sm"
+            >
+              <ListPlus size={18} />
+              Menu
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setPrefill(null);
+                setAdding(true);
+              }}
+              className="flex h-11 items-center gap-2 rounded-full bg-peach px-4 text-sm font-bold text-white shadow-soft"
+            >
+              <Plus size={18} />
+              Tambah
+            </button>
+          </div>
         }
       />
 
@@ -229,6 +256,8 @@ export function TrackerView({
       </div>
 
       {!sortedRows.length ? <EmptyState text="Belum ada log makan." /> : null}
+
+      {pickingMenu ? <MenuPicker rows={menuRows} onPick={pickMenu} onClose={() => setPickingMenu(false)} /> : null}
 
       {activeRecord ? (
         <FormModal

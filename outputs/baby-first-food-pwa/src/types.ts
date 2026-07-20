@@ -9,6 +9,7 @@ export type AgeCategory =
   | '11 Bulan'
   | '12 Bulan Ke Atas';
 export type FoodCategory = 'Buah' | 'Sayur' | 'Protein' | 'Bubur' | 'Finger Food' | 'Snek' | 'Lain-Lain';
+export type MenuAuthor = 'Ayah' | 'Ibu';
 
 export type BabyProfile = {
   id: string;
@@ -43,6 +44,7 @@ export type Recipe = {
   image_url: string;
   age_category: AgeCategory;
   category: FoodCategory;
+  author: MenuAuthor;
   ingredients: string;
   instructions: string;
   notes: string;

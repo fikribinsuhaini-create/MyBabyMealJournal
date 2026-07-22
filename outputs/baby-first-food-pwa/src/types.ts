@@ -8,7 +8,7 @@ export type AgeCategory =
   | '10 Bulan'
   | '11 Bulan'
   | '12 Bulan Ke Atas';
-export type FoodCategory = 'Buah' | 'Sayur' | 'Protein' | 'Bubur' | 'Finger Food' | 'Snek' | 'Lain-Lain';
+export type FoodCategory = 'Karbohidrat' | 'Buah' | 'Sayur' | 'Protein' | 'Bubur' | 'Finger Food' | 'Snek' | 'Lain-Lain';
 export type MenuAuthor = 'Ayah' | 'Ibu';
 
 export type BabyProfile = {
@@ -60,7 +60,16 @@ export type FoodTracker = {
   image_urls: string[];
 };
 
-export type SheetName = 'BabyProfile' | 'MenuPlanner' | 'FeedingSchedule' | 'Recipes' | 'FoodTracker';
+export type FoodTriedStatus = 'Sudah Cuba' | 'Belum Cuba';
+
+export type FoodLibraryItem = {
+  id: string;
+  food_name: string;
+  category: FoodCategory;
+  tried_status: FoodTriedStatus;
+};
+
+export type SheetName = 'BabyProfile' | 'MenuPlanner' | 'FeedingSchedule' | 'Recipes' | 'FoodTracker' | 'FoodLibrary';
 
 export type AppData = {
   BabyProfile: BabyProfile[];
@@ -68,6 +77,7 @@ export type AppData = {
   FeedingSchedule: FeedingSchedule[];
   Recipes: Recipe[];
   FoodTracker: FoodTracker[];
+  FoodLibrary: FoodLibraryItem[];
 };
 
 export type SyncState = 'offline' | 'local' | 'syncing' | 'synced' | 'error';

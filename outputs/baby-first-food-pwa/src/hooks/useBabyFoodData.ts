@@ -43,6 +43,9 @@ function mergeRemoteData(local: AppData, remote: Partial<AppData>) {
       case 'FoodTracker':
         next.FoodTracker = remoteRows as AppData['FoodTracker'];
         break;
+      case 'FoodLibrary':
+        next.FoodLibrary = remoteRows as AppData['FoodLibrary'];
+        break;
     }
   });
 

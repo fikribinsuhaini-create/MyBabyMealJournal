@@ -80,11 +80,30 @@ begin
   end if;
 end $$;
 
+create table if not exists public.food_library (
+  id text primary key,
+  food_name text not null default '',
+  category text not null default '',
+  tried_status text not null default 'Belum Cuba'
+);
+
+-- Add the manual tried/untried tick to installs created before this column existed.
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'food_library' and column_name = 'tried_status'
+  ) then
+    alter table public.food_library add column tried_status text not null default 'Belum Cuba';
+  end if;
+end $$;
+
 alter table public.baby_profiles enable row level security;
 alter table public.menu_planner enable row level security;
 alter table public.feeding_schedule enable row level security;
 alter table public.recipes enable row level security;
 alter table public.food_tracker enable row level security;
+alter table public.food_library enable row level security;
 
 drop policy if exists "baby_profiles public all" on public.baby_profiles;
 create policy "baby_profiles public all" on public.baby_profiles for all to anon, authenticated using (true) with check (true);
@@ -100,6 +119,9 @@ create policy "recipes public all" on public.recipes for all to anon, authentica
 
 drop policy if exists "food_tracker public all" on public.food_tracker;
 create policy "food_tracker public all" on public.food_tracker for all to anon, authenticated using (true) with check (true);
+
+drop policy if exists "food_library public all" on public.food_library;
+create policy "food_library public all" on public.food_library for all to anon, authenticated using (true) with check (true);
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (

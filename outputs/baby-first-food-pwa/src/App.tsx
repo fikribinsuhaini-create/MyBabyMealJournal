@@ -6,7 +6,7 @@ import { GalleryView } from './views/GalleryView';
 import { HistoryView } from './views/HistoryView';
 import { MenuPlannerView } from './views/MenuPlannerView';
 import { TrackerView } from './views/TrackerView';
-import type { BabyProfile, FoodTracker, Recipe } from './types';
+import type { BabyProfile, FoodLibraryItem, FoodTracker, Recipe } from './types';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
@@ -18,6 +18,9 @@ export default function App() {
   const upsertTracker = async (row: FoodTracker) => upsert('FoodTracker', row);
   const upsertRecipe = async (row: Recipe) => {
     await upsert('Recipes', row);
+  };
+  const upsertLibraryItem = async (row: FoodLibraryItem) => {
+    await upsert('FoodLibrary', row);
   };
   const babyBirthDate = data.BabyProfile[0]?.birth_date ?? '';
 
@@ -42,7 +45,14 @@ export default function App() {
       {activeTab === 'menu' ? (
         <MenuPlannerView rows={data.Recipes} upsert={upsertRecipe} remove={(id) => remove('Recipes', id)} />
       ) : null}
-      {activeTab === 'history' ? <HistoryView rows={data.FoodTracker} /> : null}
+      {activeTab === 'history' ? (
+        <HistoryView
+          rows={data.FoodTracker}
+          libraryRows={data.FoodLibrary}
+          upsertLibraryItem={upsertLibraryItem}
+          removeLibraryItem={(id) => remove('FoodLibrary', id)}
+        />
+      ) : null}
       {activeTab === 'gallery' ? <GalleryView rows={data.FoodTracker} birthDate={babyBirthDate} /> : null}
     </AppShell>
   );

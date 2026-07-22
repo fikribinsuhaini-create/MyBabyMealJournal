@@ -15,7 +15,7 @@ export function loadLocalData(): AppData {
   }
 
   try {
-    return JSON.parse(raw) as AppData;
+    return { ...sampleData, ...(JSON.parse(raw) as Partial<AppData>) };
   } catch {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(sampleData));
     return sampleData;

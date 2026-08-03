@@ -2,13 +2,13 @@ import { Edit3, ListPlus, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { FormModal } from '../components/FormModal';
 import { MenuPicker } from '../components/MenuPicker';
+import { ReportExport } from '../components/ReportExport';
+import { TrackerWeekCalendar } from '../components/TrackerWeekCalendar';
 import { Card, EmptyState, IconButton, Pill, SectionTitle } from '../components/Ui';
 import { ageCategories, foodStatuses, reactions, trackerMealTimes, weeks } from '../constants';
-import type { FoodTracker, Recipe } from '../types';
+import type { BabyProfile, FoodTracker, Recipe } from '../types';
 import { formatDisplayDate, todayIso, toDateInputValue } from '../utils/date';
-
-const META_START = '[[baby-food-meta:';
-const META_END = ']]';
+import { parseTrackerNotes, serializeTrackerNotes } from '../utils/trackerMeta';
 
 type TrackerFormValues = {
   age_category?: string;
@@ -27,38 +27,6 @@ function weekdayFromDate(dateValue: string) {
   const parsed = new Date(dateValue);
   if (Number.isNaN(parsed.getTime())) return '';
   return new Intl.DateTimeFormat('ms-MY', { weekday: 'long' }).format(parsed);
-}
-
-function parseTrackerNotes(notes = '') {
-  if (!notes.startsWith(META_START)) {
-    return { age_category: '', week: '', meal_time: '', cleanNotes: notes };
-  }
-
-  const closeIndex = notes.indexOf(META_END);
-  if (closeIndex === -1) {
-    return { age_category: '', week: '', meal_time: '', cleanNotes: notes };
-  }
-
-  const rawMeta = notes.slice(META_START.length, closeIndex);
-  const cleanNotes = notes.slice(closeIndex + META_END.length).replace(/^\n+/, '');
-
-  try {
-    const meta = JSON.parse(rawMeta) as Partial<Record<'age_category' | 'week' | 'meal_time', string>>;
-    return {
-      age_category: meta.age_category ?? '',
-      week: meta.week ?? '',
-      meal_time: meta.meal_time ?? '',
-      cleanNotes,
-    };
-  } catch {
-    return { age_category: '', week: '', meal_time: '', cleanNotes };
-  }
-}
-
-function serializeTrackerNotes(notes: string, ageCategory: string, week: string, mealTime: string) {
-  const meta = JSON.stringify({ age_category: ageCategory, week, meal_time: mealTime });
-  const cleanNotes = notes.trim();
-  return cleanNotes ? `${META_START}${meta}${META_END}\n${cleanNotes}` : `${META_START}${meta}${META_END}`;
 }
 
 function trackerAge(row: FoodTracker) {
@@ -93,21 +61,28 @@ function createDefaultRecord(activeAge: string, activeWeek: string, activeMealTi
 export function TrackerView({
   rows,
   menuRows,
+  babyProfile,
   upsert,
   remove,
   openAddOnMount,
   onOpenAddConsumed,
+  openCalendarOnMount,
+  onOpenCalendarConsumed,
 }: {
   rows: FoodTracker[];
   menuRows: Recipe[];
+  babyProfile?: BabyProfile;
   upsert: (row: FoodTracker) => Promise<boolean>;
   remove: (id: string) => Promise<void>;
   openAddOnMount?: boolean;
   onOpenAddConsumed?: () => void;
+  openCalendarOnMount?: boolean;
+  onOpenCalendarConsumed?: () => void;
 }) {
   const [editing, setEditing] = useState<FoodTracker | null>(null);
   const [adding, setAdding] = useState(false);
   const [pickingMenu, setPickingMenu] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
   const [prefill, setPrefill] = useState<(Partial<FoodTracker> & TrackerFormValues) | null>(null);
   const [activeAge] = useState(ageCategories[0]);
   const [activeWeek] = useState(weeks[0]);
@@ -130,6 +105,13 @@ export function TrackerView({
     setPrefill(null);
     setAdding(true);
     onOpenAddConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!openCalendarOnMount) return;
+    setShowCalendar(true);
+    onOpenCalendarConsumed?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -194,9 +176,19 @@ export function TrackerView({
             <h3 className="mt-1 text-lg font-bold text-cocoa">Catat makan bayi</h3>
             <p className="mt-1 text-sm leading-relaxed text-cocoa/65">Tarikh, umur, minggu, makanan, reaksi, nota dan gambar dalam satu tempat.</p>
           </div>
-          <Pill tone="sage">{rows.length} log</Pill>
+          <button
+            type="button"
+            onClick={() => setShowCalendar(true)}
+            aria-label="Buka kalendar rujukan minggu"
+            title="Buka kalendar rujukan minggu"
+            className="rounded-full bg-sage/25 px-3 py-1 text-xs font-semibold text-sageDeep transition active:scale-95"
+          >
+            {rows.length} log
+          </button>
         </div>
       </Card>
+
+      <ReportExport rows={rows} babyProfile={babyProfile} />
 
       <div className="space-y-3">
         {sortedRows.map((row) => {
@@ -258,6 +250,8 @@ export function TrackerView({
       {!sortedRows.length ? <EmptyState text="Belum ada log makan." /> : null}
 
       {pickingMenu ? <MenuPicker rows={menuRows} onPick={pickMenu} onClose={() => setPickingMenu(false)} /> : null}
+
+      {showCalendar ? <TrackerWeekCalendar birthDate={babyProfile?.birth_date ?? ''} rows={rows} onClose={() => setShowCalendar(false)} /> : null}
 
       {activeRecord ? (
         <FormModal

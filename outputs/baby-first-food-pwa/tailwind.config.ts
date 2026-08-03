@@ -17,6 +17,8 @@ export default {
         oat: '#F4E3CF',
         butter: '#FFE7A8',
         berry: '#C7788D',
+        sky: '#BEE3F5',
+        skyDeep: '#4E93AE',
       },
       boxShadow: {
         soft: '0 18px 50px rgba(111, 86, 72, 0.12)',

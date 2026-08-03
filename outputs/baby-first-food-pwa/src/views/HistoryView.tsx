@@ -5,24 +5,10 @@ import { Card, EmptyState, IconButton, Pill, SectionTitle } from '../components/
 import { ageCategories, foodCategories } from '../constants';
 import type { FoodLibraryItem, FoodTracker } from '../types';
 import { formatDisplayDate } from '../utils/date';
-
-const META_START = '[[baby-food-meta:';
-const META_END = ']]';
+import { parseTrackerNotes } from '../utils/trackerMeta';
 
 function trackerAge(row: FoodTracker) {
-  const notes = row.notes || '';
-  if (!notes.startsWith(META_START)) return 'Umur belum set';
-
-  const closeIndex = notes.indexOf(META_END);
-  if (closeIndex === -1) return 'Umur belum set';
-
-  try {
-    const rawMeta = notes.slice(META_START.length, closeIndex);
-    const meta = JSON.parse(rawMeta) as Partial<Record<'age_category', string>>;
-    return meta.age_category || 'Umur belum set';
-  } catch {
-    return 'Umur belum set';
-  }
+  return parseTrackerNotes(row.notes).age_category || 'Umur belum set';
 }
 
 export function HistoryView({

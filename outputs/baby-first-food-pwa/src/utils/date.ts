@@ -25,6 +25,13 @@ export function todayIso() {
   return new Date().toISOString().slice(0, 10);
 }
 
+export function addDaysIso(value: string, delta: number) {
+  const parsed = parseDate(value);
+  if (!parsed) return value;
+  parsed.setDate(parsed.getDate() + delta);
+  return toDateInputValue(parsed.toISOString());
+}
+
 export function parseDate(value: string) {
   if (!value) return null;
   const parsed = new Date(value);

@@ -11,6 +11,7 @@ import type { BabyProfile, FoodLibraryItem, FoodTracker, Recipe } from './types'
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
   const [pendingTrackerAdd, setPendingTrackerAdd] = useState(false);
+  const [pendingTrackerCalendar, setPendingTrackerCalendar] = useState(false);
   const { data, syncState, syncMessage, upsert, remove } = useBabyFoodData();
   const upsertBabyProfile = async (sheet: 'BabyProfile', row: BabyProfile) => {
     await upsert(sheet, row);
@@ -29,17 +30,27 @@ export default function App() {
     setActiveTab('tracker');
   };
 
+  const openTrackerCalendar = () => {
+    setPendingTrackerCalendar(true);
+    setActiveTab('tracker');
+  };
+
   return (
     <AppShell activeTab={activeTab} setActiveTab={setActiveTab} syncState={syncState} syncMessage={syncMessage} data={data}>
-      {activeTab === 'dashboard' ? <DashboardView data={data} upsert={upsertBabyProfile} onQuickAddTracker={quickAddTracker} /> : null}
+      {activeTab === 'dashboard' ? (
+        <DashboardView data={data} upsert={upsertBabyProfile} onQuickAddTracker={quickAddTracker} onOpenTrackerCalendar={openTrackerCalendar} />
+      ) : null}
       {activeTab === 'tracker' ? (
         <TrackerView
           rows={data.FoodTracker}
           menuRows={data.Recipes}
+          babyProfile={data.BabyProfile[0]}
           upsert={upsertTracker}
           remove={(id) => remove('FoodTracker', id)}
           openAddOnMount={pendingTrackerAdd}
           onOpenAddConsumed={() => setPendingTrackerAdd(false)}
+          openCalendarOnMount={pendingTrackerCalendar}
+          onOpenCalendarConsumed={() => setPendingTrackerCalendar(false)}
         />
       ) : null}
       {activeTab === 'menu' ? (

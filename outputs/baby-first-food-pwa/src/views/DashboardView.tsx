@@ -18,10 +18,12 @@ export function DashboardView({
   data,
   upsert,
   onQuickAddTracker,
+  onOpenTrackerCalendar,
 }: {
   data: AppData;
   upsert: (sheet: 'BabyProfile', row: BabyProfile) => Promise<void>;
   onQuickAddTracker?: () => void;
+  onOpenTrackerCalendar?: () => void;
 }) {
   void upsert;
 
@@ -88,12 +90,26 @@ export function DashboardView({
       </button>
 
       <div className="grid grid-cols-3 gap-3">
-        {stats.map(([label, value]) => (
-          <Card key={label} className="p-3 text-center">
-            <p className="text-2xl font-bold text-sageDeep">{value}</p>
-            <p className="mt-1 text-[11px] font-semibold text-cocoa/65">{label}</p>
-          </Card>
-        ))}
+        {stats.map(([label, value]) =>
+          label === 'Log' ? (
+            <button
+              key={label}
+              type="button"
+              onClick={onOpenTrackerCalendar}
+              aria-label="Buka kalendar rujukan minggu"
+              title="Buka kalendar rujukan minggu"
+              className="rounded-[24px] bg-white p-3 text-center shadow-soft transition active:scale-95"
+            >
+              <p className="text-2xl font-bold text-sageDeep">{value}</p>
+              <p className="mt-1 text-[11px] font-semibold text-cocoa/65">{label}</p>
+            </button>
+          ) : (
+            <Card key={label} className="p-3 text-center">
+              <p className="text-2xl font-bold text-sageDeep">{value}</p>
+              <p className="mt-1 text-[11px] font-semibold text-cocoa/65">{label}</p>
+            </Card>
+          )
+        )}
       </div>
     </div>
   );

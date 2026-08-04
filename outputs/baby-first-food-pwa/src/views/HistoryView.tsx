@@ -1,7 +1,7 @@
 import { Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { FormModal } from '../components/FormModal';
-import { Card, EmptyState, IconButton, Pill, SectionTitle } from '../components/Ui';
+import { Card, EmptyState, IconButton, Pill, SearchInput, SectionTitle } from '../components/Ui';
 import { ageCategories, foodCategories } from '../constants';
 import type { FoodLibraryItem, FoodTracker } from '../types';
 import { formatDisplayDate } from '../utils/date';
@@ -25,6 +25,8 @@ export function HistoryView({
   const [mode, setMode] = useState<'hari' | 'kategori'>('hari');
   const [activeAge, setActiveAge] = useState('Semua');
   const [addingFood, setAddingFood] = useState(false);
+  const [hariSearch, setHariSearch] = useState('');
+  const [kategoriSearch, setKategoriSearch] = useState('');
 
   const ageFilters = useMemo(() => {
     const availableAges = ageCategories.filter((ageCategory) => rows.some((row) => trackerAge(row) === ageCategory));
@@ -55,19 +57,29 @@ export function HistoryView({
     }));
   }, [activeAge, rows]);
 
-  const libraryByCategory = useMemo(
-    () =>
-      foodCategories
-        .map((category) => {
-          const items = [...libraryRows.filter((item) => item.category === category)].sort(
-            (left, right) => Number(left.tried_status === 'Sudah Cuba') - Number(right.tried_status === 'Sudah Cuba')
-          );
-          const untriedCount = items.filter((item) => item.tried_status !== 'Sudah Cuba').length;
-          return { category, items, untriedCount };
-        })
-        .filter((group) => group.items.length > 0),
-    [libraryRows]
-  );
+  const filteredHistoryByDay = useMemo(() => {
+    const query = hariSearch.trim().toLowerCase();
+    if (!query) return historyByDay;
+    return historyByDay.filter(
+      (group) =>
+        group.menuNames.toLowerCase().includes(query) ||
+        formatDisplayDate(group.date).toLowerCase().includes(query) ||
+        `day ${group.dayNumber}`.includes(query)
+    );
+  }, [hariSearch, historyByDay]);
+
+  const libraryByCategory = useMemo(() => {
+    const query = kategoriSearch.trim().toLowerCase();
+    return foodCategories
+      .map((category) => {
+        const items = [...libraryRows.filter((item) => item.category === category)]
+          .filter((item) => !query || item.food_name.toLowerCase().includes(query))
+          .sort((left, right) => Number(left.tried_status === 'Sudah Cuba') - Number(right.tried_status === 'Sudah Cuba'));
+        const untriedCount = items.filter((item) => item.tried_status !== 'Sudah Cuba').length;
+        return { category, items, untriedCount };
+      })
+      .filter((group) => group.items.length > 0);
+  }, [kategoriSearch, libraryRows]);
 
   const totalUntried = useMemo(() => libraryRows.filter((item) => item.tried_status !== 'Sudah Cuba').length, [libraryRows]);
 
@@ -102,6 +114,8 @@ export function HistoryView({
 
       {mode === 'hari' ? (
         <>
+          <SearchInput value={hariSearch} onChange={setHariSearch} placeholder="Cari hari, tarikh, atau menu..." />
+
           <div className="flex gap-2 overflow-x-auto pb-1">
             {ageFilters.map((ageLabel) => (
               <button
@@ -128,9 +142,9 @@ export function HistoryView({
             </div>
           </Card>
 
-          {historyByDay.length ? (
+          {filteredHistoryByDay.length ? (
             <div className="space-y-2">
-              {historyByDay.map((group) => (
+              {filteredHistoryByDay.map((group) => (
                 <Card key={group.date} className="p-4">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <p className="text-base font-black leading-tight text-cocoa">Day {group.dayNumber}</p>
@@ -143,7 +157,7 @@ export function HistoryView({
             </div>
           ) : (
             <Card>
-              <EmptyState text="Belum ada food history." />
+              <EmptyState text={hariSearch.trim() ? 'Tiada hasil untuk carian ini.' : 'Belum ada food history.'} />
             </Card>
           )}
         </>
@@ -157,6 +171,8 @@ export function HistoryView({
             <Plus size={18} />
             Tambah Makanan
           </button>
+
+          <SearchInput value={kategoriSearch} onChange={setKategoriSearch} placeholder="Cari nama makanan..." />
 
           {libraryByCategory.length ? (
             <div className="space-y-3">
@@ -199,7 +215,13 @@ export function HistoryView({
             </div>
           ) : (
             <Card>
-              <EmptyState text="Belum ada senarai makanan. Tambah makanan ikut kategori dulu." />
+              <EmptyState
+                text={
+                  kategoriSearch.trim()
+                    ? 'Tiada makanan sepadan dengan carian ini.'
+                    : 'Belum ada senarai makanan. Tambah makanan ikut kategori dulu.'
+                }
+              />
             </Card>
           )}
         </>

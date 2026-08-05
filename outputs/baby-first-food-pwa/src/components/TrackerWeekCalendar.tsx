@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { days, weeks } from '../constants';
 import type { FoodTracker } from '../types';
@@ -23,7 +23,17 @@ function statusTone(status: string) {
   return 'sage' as const;
 }
 
-export function TrackerWeekCalendar({ birthDate, rows, onClose }: { birthDate: string; rows: FoodTracker[]; onClose: () => void }) {
+export function TrackerWeekCalendar({
+  birthDate,
+  rows,
+  onClose,
+  onAddForDate,
+}: {
+  birthDate: string;
+  rows: FoodTracker[];
+  onClose: () => void;
+  onAddForDate?: (iso: string) => void;
+}) {
   const today = useMemo(() => new Date(), []);
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -154,6 +164,17 @@ export function TrackerWeekCalendar({ birthDate, rows, onClose }: { birthDate: s
                       Tutup
                     </button>
                   </div>
+
+                  {onAddForDate ? (
+                    <button
+                      type="button"
+                      onClick={() => onAddForDate(selectedDate)}
+                      className="flex w-full items-center justify-center gap-1.5 rounded-[14px] bg-peach px-3 py-2 text-xs font-bold text-white shadow-sm active:scale-95"
+                    >
+                      <Plus size={15} />
+                      Tambah log pada tarikh ini
+                    </button>
+                  ) : null}
 
                   {selectedEntries.length ? (
                     <div className="space-y-2">

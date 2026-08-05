@@ -8,6 +8,7 @@ import { Card, EmptyState, IconButton, Pill, SectionTitle } from '../components/
 import { ageCategories, foodStatuses, reactions, trackerMealTimes, weeks } from '../constants';
 import type { BabyProfile, FoodTracker, Recipe } from '../types';
 import { formatDisplayDate, todayIso, toDateInputValue } from '../utils/date';
+import { weekInfoForDate } from '../utils/trackerCalendar';
 import { parseTrackerNotes, serializeTrackerNotes } from '../utils/trackerMeta';
 
 type TrackerFormValues = {
@@ -64,20 +65,20 @@ export function TrackerView({
   babyProfile,
   upsert,
   remove,
-  openAddOnMount,
-  onOpenAddConsumed,
   openCalendarOnMount,
   onOpenCalendarConsumed,
+  openAddForDate,
+  onOpenAddForDateConsumed,
 }: {
   rows: FoodTracker[];
   menuRows: Recipe[];
   babyProfile?: BabyProfile;
   upsert: (row: FoodTracker) => Promise<boolean>;
   remove: (id: string) => Promise<void>;
-  openAddOnMount?: boolean;
-  onOpenAddConsumed?: () => void;
   openCalendarOnMount?: boolean;
   onOpenCalendarConsumed?: () => void;
+  openAddForDate?: string | null;
+  onOpenAddForDateConsumed?: () => void;
 }) {
   const [editing, setEditing] = useState<FoodTracker | null>(null);
   const [adding, setAdding] = useState(false);
@@ -99,19 +100,28 @@ export function TrackerView({
     setAdding(true);
   };
 
-  useEffect(() => {
-    if (!openAddOnMount) return;
+  const pickCalendarDate = (iso: string) => {
+    setShowCalendar(false);
     setEditing(null);
-    setPrefill(null);
+    const info = babyProfile?.birth_date ? weekInfoForDate(babyProfile.birth_date, iso) : null;
+    setPrefill({
+      ...createDefaultRecord(info?.ageCategory || activeAge, info?.week || activeWeek, activeMealTime),
+      introduced_date: iso,
+    });
     setAdding(true);
-    onOpenAddConsumed?.();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  };
 
   useEffect(() => {
     if (!openCalendarOnMount) return;
     setShowCalendar(true);
     onOpenCalendarConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!openAddForDate) return;
+    pickCalendarDate(openAddForDate);
+    onOpenAddForDateConsumed?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -251,7 +261,14 @@ export function TrackerView({
 
       {pickingMenu ? <MenuPicker rows={menuRows} onPick={pickMenu} onClose={() => setPickingMenu(false)} /> : null}
 
-      {showCalendar ? <TrackerWeekCalendar birthDate={babyProfile?.birth_date ?? ''} rows={rows} onClose={() => setShowCalendar(false)} /> : null}
+      {showCalendar ? (
+        <TrackerWeekCalendar
+          birthDate={babyProfile?.birth_date ?? ''}
+          rows={rows}
+          onClose={() => setShowCalendar(false)}
+          onAddForDate={pickCalendarDate}
+        />
+      ) : null}
 
       {activeRecord ? (
         <FormModal

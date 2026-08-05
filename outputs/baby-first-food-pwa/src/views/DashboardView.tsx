@@ -1,5 +1,5 @@
-import { Plus } from 'lucide-react';
 import { useMemo } from 'react';
+import { DashboardWeekStrip } from '../components/DashboardWeekStrip';
 import { Card, Pill } from '../components/Ui';
 import type { AppData, BabyProfile } from '../types';
 import { formatDisplayDate, todayIso } from '../utils/date';
@@ -17,13 +17,13 @@ function cleanNotes(notes = '') {
 export function DashboardView({
   data,
   upsert,
-  onQuickAddTracker,
   onOpenTrackerCalendar,
+  onAddTrackerForDate,
 }: {
   data: AppData;
   upsert: (sheet: 'BabyProfile', row: BabyProfile) => Promise<void>;
-  onQuickAddTracker?: () => void;
   onOpenTrackerCalendar?: () => void;
+  onAddTrackerForDate?: (iso: string) => void;
 }) {
   void upsert;
 
@@ -53,6 +53,10 @@ export function DashboardView({
 
   return (
     <div className="space-y-5">
+      {onAddTrackerForDate ? (
+        <DashboardWeekStrip rows={data.FoodTracker} onAddForDate={onAddTrackerForDate} onOpenFullCalendar={onOpenTrackerCalendar} />
+      ) : null}
+
       <Card className="bg-[#fbf7ef] p-4">
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
@@ -79,15 +83,6 @@ export function DashboardView({
           </div>
         </div>
       </Card>
-
-      <button
-        type="button"
-        onClick={onQuickAddTracker}
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-peach text-sm font-bold text-white shadow-soft"
-      >
-        <Plus size={18} />
-        Tambah Log Tracker
-      </button>
 
       <div className="grid grid-cols-3 gap-3">
         {stats.map(([label, value]) =>

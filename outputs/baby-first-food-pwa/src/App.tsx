@@ -10,8 +10,8 @@ import type { BabyProfile, FoodLibraryItem, FoodTracker, Recipe } from './types'
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
-  const [pendingTrackerAdd, setPendingTrackerAdd] = useState(false);
   const [pendingTrackerCalendar, setPendingTrackerCalendar] = useState(false);
+  const [pendingTrackerDate, setPendingTrackerDate] = useState<string | null>(null);
   const { data, syncState, syncMessage, upsert, remove } = useBabyFoodData();
   const upsertBabyProfile = async (sheet: 'BabyProfile', row: BabyProfile) => {
     await upsert(sheet, row);
@@ -25,20 +25,25 @@ export default function App() {
   };
   const babyBirthDate = data.BabyProfile[0]?.birth_date ?? '';
 
-  const quickAddTracker = () => {
-    setPendingTrackerAdd(true);
+  const openTrackerCalendar = () => {
+    setPendingTrackerCalendar(true);
     setActiveTab('tracker');
   };
 
-  const openTrackerCalendar = () => {
-    setPendingTrackerCalendar(true);
+  const addTrackerForDate = (iso: string) => {
+    setPendingTrackerDate(iso);
     setActiveTab('tracker');
   };
 
   return (
     <AppShell activeTab={activeTab} setActiveTab={setActiveTab} syncState={syncState} syncMessage={syncMessage} data={data}>
       {activeTab === 'dashboard' ? (
-        <DashboardView data={data} upsert={upsertBabyProfile} onQuickAddTracker={quickAddTracker} onOpenTrackerCalendar={openTrackerCalendar} />
+        <DashboardView
+          data={data}
+          upsert={upsertBabyProfile}
+          onOpenTrackerCalendar={openTrackerCalendar}
+          onAddTrackerForDate={addTrackerForDate}
+        />
       ) : null}
       {activeTab === 'tracker' ? (
         <TrackerView
@@ -47,10 +52,10 @@ export default function App() {
           babyProfile={data.BabyProfile[0]}
           upsert={upsertTracker}
           remove={(id) => remove('FoodTracker', id)}
-          openAddOnMount={pendingTrackerAdd}
-          onOpenAddConsumed={() => setPendingTrackerAdd(false)}
           openCalendarOnMount={pendingTrackerCalendar}
           onOpenCalendarConsumed={() => setPendingTrackerCalendar(false)}
+          openAddForDate={pendingTrackerDate}
+          onOpenAddForDateConsumed={() => setPendingTrackerDate(null)}
         />
       ) : null}
       {activeTab === 'menu' ? (

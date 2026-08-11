@@ -7,4 +7,5 @@ export const sampleData: AppData = {
   Recipes: [],
   FoodTracker: [],
   FoodLibrary: [],
+  MenuIdeas: [],
 };

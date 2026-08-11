@@ -6,12 +6,13 @@ import { GalleryView } from './views/GalleryView';
 import { HistoryView } from './views/HistoryView';
 import { MenuPlannerView } from './views/MenuPlannerView';
 import { TrackerView } from './views/TrackerView';
-import type { BabyProfile, FoodLibraryItem, FoodTracker, Recipe } from './types';
+import type { BabyProfile, FoodLibraryItem, FoodTracker, MenuIdea, Recipe } from './types';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
   const [pendingTrackerCalendar, setPendingTrackerCalendar] = useState(false);
   const [pendingTrackerDate, setPendingTrackerDate] = useState<string | null>(null);
+  const [pendingMissingPhotosFilter, setPendingMissingPhotosFilter] = useState(false);
   const { data, syncState, syncMessage, upsert, remove } = useBabyFoodData();
   const upsertBabyProfile = async (sheet: 'BabyProfile', row: BabyProfile) => {
     await upsert(sheet, row);
@@ -22,6 +23,9 @@ export default function App() {
   };
   const upsertLibraryItem = async (row: FoodLibraryItem) => {
     await upsert('FoodLibrary', row);
+  };
+  const upsertMenuIdea = async (row: MenuIdea) => {
+    await upsert('MenuIdeas', row);
   };
   const babyBirthDate = data.BabyProfile[0]?.birth_date ?? '';
 
@@ -35,6 +39,11 @@ export default function App() {
     setActiveTab('tracker');
   };
 
+  const goToTrackerMissingPhotos = () => {
+    setPendingMissingPhotosFilter(true);
+    setActiveTab('tracker');
+  };
+
   return (
     <AppShell activeTab={activeTab} setActiveTab={setActiveTab} syncState={syncState} syncMessage={syncMessage} data={data}>
       {activeTab === 'dashboard' ? (
@@ -43,6 +52,7 @@ export default function App() {
           upsert={upsertBabyProfile}
           onOpenTrackerCalendar={openTrackerCalendar}
           onAddTrackerForDate={addTrackerForDate}
+          onGoToTracker={goToTrackerMissingPhotos}
         />
       ) : null}
       {activeTab === 'tracker' ? (
@@ -56,10 +66,19 @@ export default function App() {
           onOpenCalendarConsumed={() => setPendingTrackerCalendar(false)}
           openAddForDate={pendingTrackerDate}
           onOpenAddForDateConsumed={() => setPendingTrackerDate(null)}
+          filterMissingPhotosOnMount={pendingMissingPhotosFilter}
+          onFilterMissingPhotosConsumed={() => setPendingMissingPhotosFilter(false)}
         />
       ) : null}
       {activeTab === 'menu' ? (
-        <MenuPlannerView rows={data.Recipes} upsert={upsertRecipe} remove={(id) => remove('Recipes', id)} />
+        <MenuPlannerView
+          rows={data.Recipes}
+          upsert={upsertRecipe}
+          remove={(id) => remove('Recipes', id)}
+          ideaRows={data.MenuIdeas}
+          upsertIdea={upsertMenuIdea}
+          removeIdea={(id) => remove('MenuIdeas', id)}
+        />
       ) : null}
       {activeTab === 'history' ? (
         <HistoryView

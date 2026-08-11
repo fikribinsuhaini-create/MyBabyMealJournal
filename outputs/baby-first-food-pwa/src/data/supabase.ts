@@ -13,6 +13,7 @@ const tableMap: Record<SheetName, string> = {
   Recipes: 'recipes',
   FoodTracker: 'food_tracker',
   FoodLibrary: 'food_library',
+  MenuIdeas: 'menu_ideas',
 };
 
 function requireSupabase() {
@@ -177,13 +178,14 @@ export async function bootstrapSupabase(): Promise<Partial<AppData> | null> {
 
 export async function fetchSupabaseData(): Promise<Partial<AppData> | null> {
   requireSupabase();
-  const [babyProfile, menuPlanner, feedingSchedule, recipes, foodTracker, foodLibrary] = await Promise.all([
+  const [babyProfile, menuPlanner, feedingSchedule, recipes, foodTracker, foodLibrary, menuIdeas] = await Promise.all([
     readTable<AppData['BabyProfile'][number]>(tableMap.BabyProfile),
     readTable<AppData['MenuPlanner'][number]>(tableMap.MenuPlanner),
     readTable<AppData['FeedingSchedule'][number]>(tableMap.FeedingSchedule),
     readTable<AppData['Recipes'][number]>(tableMap.Recipes),
     readTable<AppData['FoodTracker'][number]>(tableMap.FoodTracker),
     readTable<AppData['FoodLibrary'][number]>(tableMap.FoodLibrary),
+    readTable<AppData['MenuIdeas'][number]>(tableMap.MenuIdeas),
   ]);
 
   return {
@@ -193,6 +195,7 @@ export async function fetchSupabaseData(): Promise<Partial<AppData> | null> {
     Recipes: recipes.map((row) => normalizeTextRow(row)),
     FoodTracker: foodTracker.map((row) => normalizeTextRow(row)),
     FoodLibrary: foodLibrary.map((row) => normalizeTextRow(row)),
+    MenuIdeas: menuIdeas.map((row) => normalizeTextRow(row)),
   };
 }
 
@@ -213,6 +216,7 @@ export async function seedSupabaseData(data: AppData) {
   const recipeRows = await Promise.all(data.Recipes.map((row) => normalizeRowForRemote('Recipes', row as Recipe)));
   const trackerRows = await Promise.all(data.FoodTracker.map((row) => normalizeRowForRemote('FoodTracker', row as FoodTracker)));
   const libraryRows = await Promise.all(data.FoodLibrary.map((row) => normalizeRowForRemote('FoodLibrary', row)));
+  const menuIdeaRows = await Promise.all(data.MenuIdeas.map((row) => normalizeRowForRemote('MenuIdeas', row)));
 
   await Promise.all([
     upsertTableRows(tableMap.BabyProfile, babyProfileRows),
@@ -221,6 +225,7 @@ export async function seedSupabaseData(data: AppData) {
     upsertTableRows(tableMap.Recipes, recipeRows),
     upsertTableRows(tableMap.FoodTracker, trackerRows),
     upsertTableRows(tableMap.FoodLibrary, libraryRows),
+    upsertTableRows(tableMap.MenuIdeas, menuIdeaRows),
   ]);
 }
 

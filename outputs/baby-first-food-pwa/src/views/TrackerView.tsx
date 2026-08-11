@@ -69,6 +69,8 @@ export function TrackerView({
   onOpenCalendarConsumed,
   openAddForDate,
   onOpenAddForDateConsumed,
+  filterMissingPhotosOnMount,
+  onFilterMissingPhotosConsumed,
 }: {
   rows: FoodTracker[];
   menuRows: Recipe[];
@@ -79,14 +81,21 @@ export function TrackerView({
   onOpenCalendarConsumed?: () => void;
   openAddForDate?: string | null;
   onOpenAddForDateConsumed?: () => void;
+  filterMissingPhotosOnMount?: boolean;
+  onFilterMissingPhotosConsumed?: () => void;
 }) {
   const [editing, setEditing] = useState<FoodTracker | null>(null);
   const [adding, setAdding] = useState(false);
   const [pickingMenu, setPickingMenu] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [onlyMissingPhotos, setOnlyMissingPhotos] = useState(false);
   const [prefill, setPrefill] = useState<(Partial<FoodTracker> & TrackerFormValues) | null>(null);
-  const [activeAge] = useState(ageCategories[0]);
-  const [activeWeek] = useState(weeks[0]);
+  const todayWeekInfo = useMemo(
+    () => (babyProfile?.birth_date ? weekInfoForDate(babyProfile.birth_date, todayIso()) : null),
+    [babyProfile?.birth_date]
+  );
+  const activeAge = todayWeekInfo?.ageCategory || ageCategories[0];
+  const activeWeek = todayWeekInfo?.week || weeks[0];
   const [activeMealTime] = useState(trackerMealTimes[0]);
 
   const pickMenu = (menu: Recipe) => {
@@ -125,15 +134,26 @@ export function TrackerView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!filterMissingPhotosOnMount) return;
+    setOnlyMissingPhotos(true);
+    onFilterMissingPhotosConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const sortedRows = useMemo(
     () =>
-      [...rows].sort((left, right) => {
-        const leftDate = new Date(left.introduced_date).getTime();
-        const rightDate = new Date(right.introduced_date).getTime();
-        return rightDate - leftDate;
-      }),
-    [rows]
+      [...rows]
+        .filter((row) => (onlyMissingPhotos ? !row.image_urls?.length : true))
+        .sort((left, right) => {
+          const leftDate = new Date(left.introduced_date).getTime();
+          const rightDate = new Date(right.introduced_date).getTime();
+          return rightDate - leftDate;
+        }),
+    [rows, onlyMissingPhotos]
   );
+
+  const missingPhotosTotal = useMemo(() => rows.filter((row) => !row.image_urls?.length).length, [rows]);
 
   const activeRecord = editing
     ? ({
@@ -198,6 +218,28 @@ export function TrackerView({
         </div>
       </Card>
 
+      {onlyMissingPhotos ? (
+        <div className="flex items-center justify-between gap-3 rounded-full bg-butter/45 px-4 py-2">
+          <p className="text-xs font-bold text-cocoa">Tunjuk {sortedRows.length} log belum ada gambar</p>
+          <button
+            type="button"
+            onClick={() => setOnlyMissingPhotos(false)}
+            className="shrink-0 rounded-full bg-white/70 px-3 py-1 text-xs font-semibold text-cocoa transition active:scale-95"
+          >
+            Tunjuk semua
+          </button>
+        </div>
+      ) : missingPhotosTotal > 0 ? (
+        <button
+          type="button"
+          onClick={() => setOnlyMissingPhotos(true)}
+          className="flex w-full items-center justify-between gap-3 rounded-full bg-white px-4 py-2 text-left shadow-sm transition active:scale-95"
+        >
+          <p className="text-xs font-bold text-cocoa/70">{missingPhotosTotal} log belum ada gambar</p>
+          <span className="shrink-0 text-xs font-bold text-peachDeep">Tapis</span>
+        </button>
+      ) : null}
+
       <ReportExport rows={rows} babyProfile={babyProfile} />
 
       <div className="space-y-3">
@@ -233,7 +275,11 @@ export function TrackerView({
               <div className="mt-4 flex flex-wrap gap-2">
                 <Pill tone={row.reaction.includes('Ada Reaksi') ? 'berry' : row.reaction === 'Belum Dinilai' || row.reaction.includes('Tak Pasti') ? 'butter' : 'peach'}>{row.reaction}</Pill>
                 {displayNotes ? <Pill tone="sage">Ada catatan</Pill> : null}
-                {row.image_urls?.length ? <Pill tone="sage">{row.image_urls.length} gambar</Pill> : null}
+                {row.image_urls?.length ? (
+                  <Pill tone="sage">{row.image_urls.length} gambar</Pill>
+                ) : (
+                  <Pill tone="butter">Belum ada gambar</Pill>
+                )}
               </div>
 
               {row.image_urls?.length ? (
@@ -257,7 +303,9 @@ export function TrackerView({
         })}
       </div>
 
-      {!sortedRows.length ? <EmptyState text="Belum ada log makan." /> : null}
+      {!sortedRows.length ? (
+        <EmptyState text={onlyMissingPhotos ? 'Semua log dah ada gambar. Bagus!' : 'Belum ada log makan.'} />
+      ) : null}
 
       {pickingMenu ? <MenuPicker rows={menuRows} onPick={pickMenu} onClose={() => setPickingMenu(false)} /> : null}
 

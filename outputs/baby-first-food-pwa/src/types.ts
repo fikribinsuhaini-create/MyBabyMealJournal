@@ -69,7 +69,13 @@ export type FoodLibraryItem = {
   tried_status: FoodTriedStatus;
 };
 
-export type SheetName = 'BabyProfile' | 'MenuPlanner' | 'FeedingSchedule' | 'Recipes' | 'FoodTracker' | 'FoodLibrary';
+export type MenuIdea = {
+  id: string;
+  title: string;
+  age_category: AgeCategory;
+};
+
+export type SheetName = 'BabyProfile' | 'MenuPlanner' | 'FeedingSchedule' | 'Recipes' | 'FoodTracker' | 'FoodLibrary' | 'MenuIdeas';
 
 export type AppData = {
   BabyProfile: BabyProfile[];
@@ -78,6 +84,7 @@ export type AppData = {
   Recipes: Recipe[];
   FoodTracker: FoodTracker[];
   FoodLibrary: FoodLibraryItem[];
+  MenuIdeas: MenuIdea[];
 };
 
 export type SyncState = 'offline' | 'local' | 'syncing' | 'synced' | 'error';

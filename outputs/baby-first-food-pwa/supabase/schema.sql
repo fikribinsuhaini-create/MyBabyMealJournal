@@ -98,12 +98,19 @@ begin
   end if;
 end $$;
 
+create table if not exists public.menu_ideas (
+  id text primary key,
+  title text not null default '',
+  age_category text not null default ''
+);
+
 alter table public.baby_profiles enable row level security;
 alter table public.menu_planner enable row level security;
 alter table public.feeding_schedule enable row level security;
 alter table public.recipes enable row level security;
 alter table public.food_tracker enable row level security;
 alter table public.food_library enable row level security;
+alter table public.menu_ideas enable row level security;
 
 drop policy if exists "baby_profiles public all" on public.baby_profiles;
 create policy "baby_profiles public all" on public.baby_profiles for all to anon, authenticated using (true) with check (true);
@@ -122,6 +129,9 @@ create policy "food_tracker public all" on public.food_tracker for all to anon, 
 
 drop policy if exists "food_library public all" on public.food_library;
 create policy "food_library public all" on public.food_library for all to anon, authenticated using (true) with check (true);
+
+drop policy if exists "menu_ideas public all" on public.menu_ideas;
+create policy "menu_ideas public all" on public.menu_ideas for all to anon, authenticated using (true) with check (true);
 
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (

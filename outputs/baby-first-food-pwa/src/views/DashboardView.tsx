@@ -1,3 +1,4 @@
+import { ImageOff } from 'lucide-react';
 import { useMemo } from 'react';
 import { DashboardWeekStrip } from '../components/DashboardWeekStrip';
 import { Card, Pill } from '../components/Ui';
@@ -19,11 +20,13 @@ export function DashboardView({
   upsert,
   onOpenTrackerCalendar,
   onAddTrackerForDate,
+  onGoToTracker,
 }: {
   data: AppData;
   upsert: (sheet: 'BabyProfile', row: BabyProfile) => Promise<void>;
   onOpenTrackerCalendar?: () => void;
   onAddTrackerForDate?: (iso: string) => void;
+  onGoToTracker?: () => void;
 }) {
   void upsert;
 
@@ -31,6 +34,7 @@ export function DashboardView({
   const logCount = data.FoodTracker.length;
   const reactionCount = data.FoodTracker.filter((item) => item.reaction && item.reaction !== 'Belum Dinilai').length;
   const galleryCount = data.FoodTracker.reduce((total, item) => total + (item.image_urls?.length ?? 0), 0);
+  const missingPhotoCount = data.FoodTracker.filter((item) => !item.image_urls?.length).length;
 
   const latestTracker = useMemo(
     () =>
@@ -55,6 +59,24 @@ export function DashboardView({
     <div className="space-y-5">
       {onAddTrackerForDate ? (
         <DashboardWeekStrip rows={data.FoodTracker} onAddForDate={onAddTrackerForDate} onOpenFullCalendar={onOpenTrackerCalendar} />
+      ) : null}
+
+      {missingPhotoCount > 0 ? (
+        <button
+          type="button"
+          onClick={onGoToTracker}
+          className="flex w-full items-center gap-3 rounded-[24px] bg-butter/45 p-4 text-left shadow-soft transition active:scale-[0.99]"
+        >
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-[16px] bg-white/70 text-cocoa">
+            <ImageOff size={20} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold leading-tight text-cocoa">
+              {missingPhotoCount} log belum ada gambar
+            </p>
+            <p className="mt-0.5 text-xs font-semibold text-cocoa/60">Tekan untuk lihat senarai & tambah gambar</p>
+          </div>
+        </button>
       ) : null}
 
       <Card className="bg-[#fbf7ef] p-4">

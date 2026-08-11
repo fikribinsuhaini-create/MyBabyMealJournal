@@ -46,6 +46,9 @@ function mergeRemoteData(local: AppData, remote: Partial<AppData>) {
       case 'FoodLibrary':
         next.FoodLibrary = remoteRows as AppData['FoodLibrary'];
         break;
+      case 'MenuIdeas':
+        next.MenuIdeas = remoteRows as AppData['MenuIdeas'];
+        break;
     }
   });
 
@@ -74,7 +77,12 @@ function rowMatchesRemote<T extends SheetName>(sheet: T, localRow: RowFor<T>, re
     );
   }
 
-  return JSON.stringify(localRow) === JSON.stringify(remoteRow);
+  const keys = new Set([...Object.keys(localRow as object), ...Object.keys(remoteRow as object)]);
+  return Array.from(keys).every((key) => {
+    const localValue = (localRow as Record<string, unknown>)[key] ?? '';
+    const remoteValue = (remoteRow as Record<string, unknown>)[key] ?? '';
+    return JSON.stringify(localValue) === JSON.stringify(remoteValue);
+  });
 }
 
 export function useBabyFoodData() {

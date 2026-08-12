@@ -2,6 +2,7 @@ import { Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { FoodTracker } from '../types';
 import { addDaysIso, formatDisplayDate, todayIso, toDateInputValue } from '../utils/date';
+import { PhotoCarousel } from './PhotoCarousel';
 import { Pill } from './Ui';
 
 function weekdayShortLabel(iso: string) {
@@ -46,6 +47,11 @@ export function DashboardWeekStrip({
   const selectedEntries = useMemo(
     () => rows.filter((row) => toDateInputValue(row.introduced_date) === selectedDate),
     [rows, selectedDate]
+  );
+
+  const selectedPhotos = useMemo(
+    () => selectedEntries.flatMap((row) => row.image_urls ?? []),
+    [selectedEntries]
   );
 
   return (
@@ -98,6 +104,12 @@ export function DashboardWeekStrip({
             </button>
           ) : null}
         </div>
+
+        {selectedPhotos.length ? (
+          <div className="overflow-hidden rounded-[14px]">
+            <PhotoCarousel images={selectedPhotos} alt={formatDisplayDate(selectedDate)} heightClassName="h-64" />
+          </div>
+        ) : null}
 
         {selectedEntries.length ? (
           <div className="space-y-2">

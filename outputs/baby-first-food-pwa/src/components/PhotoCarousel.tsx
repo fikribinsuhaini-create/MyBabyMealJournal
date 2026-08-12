@@ -4,10 +4,12 @@ export function PhotoCarousel({
   images,
   alt,
   intervalMs = 3500,
+  heightClassName = 'h-56',
 }: {
   images: string[];
   alt: string;
   intervalMs?: number;
+  heightClassName?: string;
 }) {
   const [index, setIndex] = useState(0);
 
@@ -27,7 +29,7 @@ export function PhotoCarousel({
 
   return (
     <div className="relative">
-      <img src={images[index]} alt={alt} className="h-56 w-full object-cover" />
+      <img src={images[index]} alt={alt} className={`w-full object-cover ${heightClassName}`} />
       {images.length > 1 ? (
         <div className="absolute inset-x-0 bottom-2 flex justify-center gap-1.5">
           {images.map((url, dotIndex) => (

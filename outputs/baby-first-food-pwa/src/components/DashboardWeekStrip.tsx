@@ -32,11 +32,13 @@ export function DashboardWeekStrip({
     const offsets = [-3, -2, -1, 0, 1, 2, 3];
     return offsets.map((offset) => {
       const iso = addDaysIso(today, offset);
+      const hasLog = rows.some((row) => toDateInputValue(row.introduced_date) === iso);
       return {
         iso,
         day: Number(iso.slice(-2)),
         weekday: weekdayShortLabel(iso),
-        hasLog: rows.some((row) => toDateInputValue(row.introduced_date) === iso),
+        hasLog,
+        isMissed: iso < today && !hasLog,
       };
     });
   }, [rows, today]);
@@ -67,13 +69,15 @@ export function DashboardWeekStrip({
               type="button"
               onClick={() => setSelectedDate(cell.iso)}
               className={`relative flex h-16 flex-col items-center justify-center gap-0.5 rounded-[14px] text-xs transition ${
-                isSelected ? 'bg-peach text-white shadow-sm' : 'bg-cream text-cocoa'
+                isSelected ? 'bg-peach text-white shadow-sm' : cell.isMissed ? 'bg-berry/15 text-cocoa' : 'bg-cream text-cocoa'
               } ${isToday && !isSelected ? 'ring-2 ring-cocoa/40' : ''}`}
             >
               <span className="text-[10px] font-semibold uppercase opacity-75">{cell.weekday}</span>
               <span className="text-sm font-bold">{cell.day}</span>
               {cell.hasLog ? (
                 <span className={`absolute bottom-1.5 h-1.5 w-1.5 rounded-full ${isSelected ? 'bg-white' : 'bg-peach'}`} />
+              ) : cell.isMissed ? (
+                <span className={`absolute bottom-1.5 h-1.5 w-1.5 rounded-full ${isSelected ? 'bg-white' : 'bg-berry'}`} />
               ) : null}
             </button>
           );

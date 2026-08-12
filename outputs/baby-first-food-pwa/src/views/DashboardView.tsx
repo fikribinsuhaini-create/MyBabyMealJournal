@@ -1,9 +1,9 @@
-import { ImageOff } from 'lucide-react';
+import { CalendarX, ImageOff } from 'lucide-react';
 import { useMemo } from 'react';
 import { DashboardWeekStrip } from '../components/DashboardWeekStrip';
 import { Card, Pill } from '../components/Ui';
 import type { AppData, BabyProfile } from '../types';
-import { formatDisplayDate, todayIso } from '../utils/date';
+import { addDaysIso, formatDisplayDate, todayIso, toDateInputValue } from '../utils/date';
 
 const META_START = '[[baby-food-meta:';
 const META_END = ']]';
@@ -36,6 +36,25 @@ export function DashboardView({
   const galleryCount = data.FoodTracker.reduce((total, item) => total + (item.image_urls?.length ?? 0), 0);
   const missingPhotoCount = data.FoodTracker.filter((item) => !item.image_urls?.length).length;
 
+  const missedDates = useMemo(() => {
+    if (!data.FoodTracker.length) return [];
+    const loggedDates = new Set(data.FoodTracker.map((row) => toDateInputValue(row.introduced_date)));
+    const earliestDate = data.FoodTracker.reduce((earliest, row) => {
+      const iso = toDateInputValue(row.introduced_date);
+      return iso && (!earliest || iso < earliest) ? iso : earliest;
+    }, '');
+    const today = todayIso();
+    const windowStart = addDaysIso(today, -6);
+    const startIso = earliestDate && earliestDate > windowStart ? earliestDate : windowStart;
+    const yesterday = addDaysIso(today, -1);
+
+    const missed: string[] = [];
+    for (let cursor = startIso; cursor <= yesterday; cursor = addDaysIso(cursor, 1)) {
+      if (!loggedDates.has(cursor)) missed.push(cursor);
+    }
+    return missed;
+  }, [data.FoodTracker]);
+
   const latestTracker = useMemo(
     () =>
       [...data.FoodTracker].sort((left, right) => {
@@ -59,6 +78,25 @@ export function DashboardView({
     <div className="space-y-5">
       {onAddTrackerForDate ? (
         <DashboardWeekStrip rows={data.FoodTracker} onAddForDate={onAddTrackerForDate} onOpenFullCalendar={onOpenTrackerCalendar} />
+      ) : null}
+
+      {missedDates.length > 0 ? (
+        <button
+          type="button"
+          onClick={onOpenTrackerCalendar}
+          className="flex w-full items-center gap-3 rounded-[24px] bg-berry/15 p-4 text-left shadow-soft transition active:scale-[0.99]"
+        >
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-[16px] bg-white/70 text-cocoa">
+            <CalendarX size={20} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold leading-tight text-cocoa">
+              {missedDates.length} hari tak diisi: {missedDates.slice(0, 3).map((iso) => formatDisplayDate(iso)).join(', ')}
+              {missedDates.length > 3 ? ', ...' : ''}
+            </p>
+            <p className="mt-0.5 text-xs font-semibold text-cocoa/60">Tekan untuk buka kalendar & isi tarikh yang tertinggal</p>
+          </div>
+        </button>
       ) : null}
 
       {missingPhotoCount > 0 ? (

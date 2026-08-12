@@ -1,6 +1,7 @@
 import { CalendarX, ImageOff } from 'lucide-react';
 import { useMemo } from 'react';
 import { DashboardWeekStrip } from '../components/DashboardWeekStrip';
+import { PhotoCarousel } from '../components/PhotoCarousel';
 import { Card } from '../components/Ui';
 import type { AppData, BabyProfile } from '../types';
 import { addDaysIso, formatDisplayDate, todayIso, toDateInputValue } from '../utils/date';
@@ -26,6 +27,13 @@ export function DashboardView({
   const reactionCount = data.FoodTracker.filter((item) => item.reaction && item.reaction !== 'Belum Dinilai').length;
   const galleryCount = data.FoodTracker.reduce((total, item) => total + (item.image_urls?.length ?? 0), 0);
   const missingPhotoCount = data.FoodTracker.filter((item) => !item.image_urls?.length).length;
+
+  const heroEntry = useMemo(() => {
+    const sorted = [...data.FoodTracker].sort(
+      (left, right) => new Date(right.introduced_date || '1970-01-01').getTime() - new Date(left.introduced_date || '1970-01-01').getTime()
+    );
+    return sorted.find((row) => row.image_urls?.length) ?? sorted[0] ?? null;
+  }, [data.FoodTracker]);
 
   const missedDates = useMemo(() => {
     if (!data.FoodTracker.length) return [];
@@ -62,6 +70,21 @@ export function DashboardView({
         onAddForDate={readOnly ? undefined : onAddTrackerForDate}
         onOpenFullCalendar={onOpenTrackerCalendar}
       />
+
+      {heroEntry ? (
+        <div className="overflow-hidden rounded-[24px] bg-white shadow-soft">
+          {heroEntry.image_urls?.length ? (
+            <PhotoCarousel images={heroEntry.image_urls} alt={heroEntry.food_name} />
+          ) : null}
+          <div className="p-4">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-sageDeep">Log terbaru</p>
+            <h3 className="mt-1 text-lg font-bold text-cocoa">{heroEntry.food_name}</h3>
+            <p className="mt-1 text-sm font-semibold text-cocoa/55">
+              {formatDisplayDate(heroEntry.introduced_date)} · {heroEntry.reaction}
+            </p>
+          </div>
+        </div>
+      ) : null}
 
       {!readOnly && missedDates.length > 0 ? (
         <button

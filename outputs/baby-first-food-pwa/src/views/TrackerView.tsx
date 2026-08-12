@@ -2,9 +2,10 @@ import { Edit3, ListPlus, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { FormModal } from '../components/FormModal';
 import { MenuPicker } from '../components/MenuPicker';
+import { PhotoCarousel } from '../components/PhotoCarousel';
 import { ReportExport } from '../components/ReportExport';
 import { TrackerWeekCalendar } from '../components/TrackerWeekCalendar';
-import { Card, EmptyState, IconButton, Pill, SectionTitle } from '../components/Ui';
+import { Card, EmptyState, IconButton, Pill, SearchInput, SectionTitle } from '../components/Ui';
 import { ageCategories, foodStatuses, reactions, trackerMealTimes, weeks } from '../constants';
 import type { BabyProfile, FoodTracker, Recipe } from '../types';
 import { formatDisplayDate, todayIso, toDateInputValue } from '../utils/date';
@@ -91,6 +92,7 @@ export function TrackerView({
   const [pickingMenu, setPickingMenu] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [onlyMissingPhotos, setOnlyMissingPhotos] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [prefill, setPrefill] = useState<(Partial<FoodTracker> & TrackerFormValues) | null>(null);
   const todayWeekInfo = useMemo(
     () => (babyProfile?.birth_date ? weekInfoForDate(babyProfile.birth_date, todayIso()) : null),
@@ -157,6 +159,20 @@ export function TrackerView({
 
   const missingPhotosTotal = useMemo(() => rows.filter((row) => !row.image_urls?.length).length, [rows]);
 
+  const visibleRows = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return sortedRows;
+    return sortedRows.filter((row) => {
+      const notes = cleanTrackerNotes(row).toLowerCase();
+      return (
+        row.food_name.toLowerCase().includes(query) ||
+        row.reaction.toLowerCase().includes(query) ||
+        notes.includes(query) ||
+        formatDisplayDate(row.introduced_date).toLowerCase().includes(query)
+      );
+    });
+  }, [sortedRows, searchQuery]);
+
   const activeRecord = editing
     ? ({
         ...editing,
@@ -222,6 +238,8 @@ export function TrackerView({
         </div>
       </Card>
 
+      <SearchInput value={searchQuery} onChange={setSearchQuery} placeholder="Cari makanan, reaksi, atau tarikh..." />
+
       {onlyMissingPhotos ? (
         <div className="flex items-center justify-between gap-3 rounded-full bg-butter/45 px-4 py-2">
           <p className="text-xs font-bold text-cocoa">Tunjuk {sortedRows.length} log belum ada gambar</p>
@@ -247,7 +265,7 @@ export function TrackerView({
       <ReportExport rows={rows} babyProfile={babyProfile} />
 
       <div className="space-y-3">
-        {sortedRows.map((row) => {
+        {visibleRows.map((row) => {
           const displayNotes = cleanTrackerNotes(row);
           const displayAge = trackerAge(row);
           const displayWeek = trackerWeek(row);
@@ -289,12 +307,8 @@ export function TrackerView({
               </div>
 
               {row.image_urls?.length ? (
-                <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
-                  {row.image_urls.map((url, index) => (
-                    <div key={`${row.id}-${index}`} className="h-28 w-28 shrink-0 overflow-hidden rounded-[18px] bg-cream">
-                      <img src={url} alt={row.food_name} className="h-full w-full object-cover" />
-                    </div>
-                  ))}
+                <div className="mt-4 overflow-hidden rounded-[18px]">
+                  <PhotoCarousel images={row.image_urls} alt={row.food_name} heightClassName="h-80" />
                 </div>
               ) : null}
 
@@ -309,8 +323,16 @@ export function TrackerView({
         })}
       </div>
 
-      {!sortedRows.length ? (
-        <EmptyState text={onlyMissingPhotos ? 'Semua log dah ada gambar. Bagus!' : 'Belum ada log makan.'} />
+      {!visibleRows.length ? (
+        <EmptyState
+          text={
+            searchQuery.trim()
+              ? 'Tiada hasil untuk carian ini.'
+              : onlyMissingPhotos
+                ? 'Semua log dah ada gambar. Bagus!'
+                : 'Belum ada log makan.'
+          }
+        />
       ) : null}
 
       {!readOnly && pickingMenu ? <MenuPicker rows={menuRows} onPick={pickMenu} onClose={() => setPickingMenu(false)} /> : null}

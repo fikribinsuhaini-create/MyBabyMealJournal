@@ -7,8 +7,10 @@ import { HistoryView } from './views/HistoryView';
 import { MenuPlannerView } from './views/MenuPlannerView';
 import { TrackerView } from './views/TrackerView';
 import type { BabyProfile, FoodLibraryItem, FoodTracker, MenuIdea, Recipe } from './types';
+import { resolveViewOnly } from './utils/viewMode';
 
 export default function App() {
+  const [viewOnly] = useState(() => resolveViewOnly());
   const [activeTab, setActiveTab] = useState<TabKey>('dashboard');
   const [pendingTrackerCalendar, setPendingTrackerCalendar] = useState(false);
   const [pendingTrackerDate, setPendingTrackerDate] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export default function App() {
   };
 
   return (
-    <AppShell activeTab={activeTab} setActiveTab={setActiveTab} syncState={syncState} syncMessage={syncMessage} data={data}>
+    <AppShell activeTab={activeTab} setActiveTab={setActiveTab} syncState={syncState} syncMessage={syncMessage} data={data} viewOnly={viewOnly}>
       {activeTab === 'dashboard' ? (
         <DashboardView
           data={data}
@@ -53,6 +55,7 @@ export default function App() {
           onOpenTrackerCalendar={openTrackerCalendar}
           onAddTrackerForDate={addTrackerForDate}
           onGoToTracker={goToTrackerMissingPhotos}
+          readOnly={viewOnly}
         />
       ) : null}
       {activeTab === 'tracker' ? (
@@ -68,9 +71,10 @@ export default function App() {
           onOpenAddForDateConsumed={() => setPendingTrackerDate(null)}
           filterMissingPhotosOnMount={pendingMissingPhotosFilter}
           onFilterMissingPhotosConsumed={() => setPendingMissingPhotosFilter(false)}
+          readOnly={viewOnly}
         />
       ) : null}
-      {activeTab === 'menu' ? (
+      {activeTab === 'menu' && !viewOnly ? (
         <MenuPlannerView
           rows={data.Recipes}
           upsert={upsertRecipe}
@@ -80,7 +84,7 @@ export default function App() {
           removeIdea={(id) => remove('MenuIdeas', id)}
         />
       ) : null}
-      {activeTab === 'history' ? (
+      {activeTab === 'history' && !viewOnly ? (
         <HistoryView
           rows={data.FoodTracker}
           libraryRows={data.FoodLibrary}

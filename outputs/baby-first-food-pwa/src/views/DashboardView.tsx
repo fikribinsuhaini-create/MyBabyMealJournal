@@ -1,19 +1,9 @@
 import { CalendarX, ImageOff } from 'lucide-react';
 import { useMemo } from 'react';
 import { DashboardWeekStrip } from '../components/DashboardWeekStrip';
-import { Card, Pill } from '../components/Ui';
+import { Card } from '../components/Ui';
 import type { AppData, BabyProfile } from '../types';
 import { addDaysIso, formatDisplayDate, todayIso, toDateInputValue } from '../utils/date';
-
-const META_START = '[[baby-food-meta:';
-const META_END = ']]';
-
-function cleanNotes(notes = '') {
-  if (!notes.startsWith(META_START)) return notes;
-  const closeIndex = notes.indexOf(META_END);
-  if (closeIndex === -1) return notes;
-  return notes.slice(closeIndex + META_END.length).replace(/^\n+/, '');
-}
 
 export function DashboardView({
   data,
@@ -21,16 +11,17 @@ export function DashboardView({
   onOpenTrackerCalendar,
   onAddTrackerForDate,
   onGoToTracker,
+  readOnly,
 }: {
   data: AppData;
   upsert: (sheet: 'BabyProfile', row: BabyProfile) => Promise<void>;
   onOpenTrackerCalendar?: () => void;
   onAddTrackerForDate?: (iso: string) => void;
   onGoToTracker?: () => void;
+  readOnly?: boolean;
 }) {
   void upsert;
 
-  const todayDate = formatDisplayDate(todayIso());
   const logCount = data.FoodTracker.length;
   const reactionCount = data.FoodTracker.filter((item) => item.reaction && item.reaction !== 'Belum Dinilai').length;
   const galleryCount = data.FoodTracker.reduce((total, item) => total + (item.image_urls?.length ?? 0), 0);
@@ -55,16 +46,6 @@ export function DashboardView({
     return missed;
   }, [data.FoodTracker]);
 
-  const latestTracker = useMemo(
-    () =>
-      [...data.FoodTracker].sort((left, right) => {
-        const leftTime = new Date(left.introduced_date || '1970-01-01').getTime();
-        const rightTime = new Date(right.introduced_date || '1970-01-01').getTime();
-        return rightTime - leftTime;
-      })[0] ?? null,
-    [data.FoodTracker]
-  );
-
   const stats = useMemo(
     () => [
       ['Log', logCount.toString()],
@@ -76,11 +57,13 @@ export function DashboardView({
 
   return (
     <div className="space-y-5">
-      {onAddTrackerForDate ? (
-        <DashboardWeekStrip rows={data.FoodTracker} onAddForDate={onAddTrackerForDate} onOpenFullCalendar={onOpenTrackerCalendar} />
-      ) : null}
+      <DashboardWeekStrip
+        rows={data.FoodTracker}
+        onAddForDate={readOnly ? undefined : onAddTrackerForDate}
+        onOpenFullCalendar={onOpenTrackerCalendar}
+      />
 
-      {missedDates.length > 0 ? (
+      {!readOnly && missedDates.length > 0 ? (
         <button
           type="button"
           onClick={onOpenTrackerCalendar}
@@ -99,7 +82,7 @@ export function DashboardView({
         </button>
       ) : null}
 
-      {missingPhotoCount > 0 ? (
+      {!readOnly && missingPhotoCount > 0 ? (
         <button
           type="button"
           onClick={onGoToTracker}
@@ -116,33 +99,6 @@ export function DashboardView({
           </div>
         </button>
       ) : null}
-
-      <Card className="bg-[#fbf7ef] p-4">
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-sageDeep">Hari ini</p>
-            <h3 className="text-lg font-bold">Jurnal ringkas</h3>
-          </div>
-          <div className="text-right">
-            <Pill tone="sage">{todayDate}</Pill>
-          </div>
-        </div>
-
-        <div className="space-y-3">
-          <div className="rounded-[22px] bg-white/75 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
-            <p className="text-xs font-bold uppercase tracking-[0.12em] text-cocoa/60">Log terbaru</p>
-            <p className="mt-2 text-lg font-bold leading-tight text-cocoa">{latestTracker?.food_name || '-'}</p>
-            <p className="mt-1 text-sm font-semibold text-cocoa/55">
-              {latestTracker?.introduced_date ? `${formatDisplayDate(latestTracker.introduced_date)} - ${latestTracker.reaction}` : 'Belum ada log makan lagi'}
-            </p>
-          </div>
-
-          <div className="rounded-[22px] bg-white/75 px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)]">
-            <p className="text-xs font-bold uppercase tracking-[0.12em] text-cocoa/60">Diari terbaru</p>
-            <p className="mt-2 text-sm font-semibold leading-relaxed text-cocoa/70">{latestTracker ? cleanNotes(latestTracker.notes) || 'Belum ada catatan.' : 'Belum ada feedback tracker lagi'}</p>
-          </div>
-        </div>
-      </Card>
 
       <div className="grid grid-cols-3 gap-3">
         {stats.map(([label, value]) =>

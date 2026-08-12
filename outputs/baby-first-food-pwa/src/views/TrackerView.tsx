@@ -71,6 +71,7 @@ export function TrackerView({
   onOpenAddForDateConsumed,
   filterMissingPhotosOnMount,
   onFilterMissingPhotosConsumed,
+  readOnly,
 }: {
   rows: FoodTracker[];
   menuRows: Recipe[];
@@ -83,6 +84,7 @@ export function TrackerView({
   onOpenAddForDateConsumed?: () => void;
   filterMissingPhotosOnMount?: boolean;
   onFilterMissingPhotosConsumed?: () => void;
+  readOnly?: boolean;
 }) {
   const [editing, setEditing] = useState<FoodTracker | null>(null);
   const [adding, setAdding] = useState(false);
@@ -173,29 +175,31 @@ export function TrackerView({
         eyebrow="Jurnal Makan"
         title="Log & feedback"
         action={
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setPickingMenu(true)}
-              aria-label="Pilih dari Menu"
-              title="Pilih dari Menu"
-              className="flex h-11 items-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-cocoa shadow-sm"
-            >
-              <ListPlus size={18} />
-              Menu
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setPrefill(null);
-                setAdding(true);
-              }}
-              className="flex h-11 items-center gap-2 rounded-full bg-peach px-4 text-sm font-bold text-white shadow-soft"
-            >
-              <Plus size={18} />
-              Tambah
-            </button>
-          </div>
+          readOnly ? null : (
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPickingMenu(true)}
+                aria-label="Pilih dari Menu"
+                title="Pilih dari Menu"
+                className="flex h-11 items-center gap-2 rounded-full bg-white px-4 text-sm font-bold text-cocoa shadow-sm"
+              >
+                <ListPlus size={18} />
+                Menu
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPrefill(null);
+                  setAdding(true);
+                }}
+                className="flex h-11 items-center gap-2 rounded-full bg-peach px-4 text-sm font-bold text-white shadow-soft"
+              >
+                <Plus size={18} />
+                Tambah
+              </button>
+            </div>
+          )
         }
       />
 
@@ -203,8 +207,8 @@ export function TrackerView({
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.16em] text-sageDeep">Jurnal harian</p>
-            <h3 className="mt-1 text-lg font-bold text-cocoa">Catat makan bayi</h3>
-            <p className="mt-1 text-sm leading-relaxed text-cocoa/65">Tarikh, umur, minggu, makanan, reaksi, nota dan gambar dalam satu tempat.</p>
+            <h3 className="mt-1 text-lg font-bold text-cocoa">Catat menu Asytar</h3>
+            <p className="mt-1 text-sm leading-relaxed text-cocoa/65">Boleh tengok balik bika Asytar da besar nanti.</p>
           </div>
           <button
             type="button"
@@ -262,14 +266,16 @@ export function TrackerView({
                   <h3 className="break-words text-xl font-bold leading-tight">{row.food_name}</h3>
                   <p className="mt-1 text-sm text-cocoa/55">{displayAge} - {displayWeek} - {displayMealTime}</p>
                 </div>
-                <div className="flex gap-2">
-                  <IconButton label="Kemaskini" onClick={() => setEditing(row)}>
-                    <Edit3 size={17} />
-                  </IconButton>
-                  <IconButton label="Padam" onClick={() => remove(row.id)} tone="danger">
-                    <Trash2 size={17} />
-                  </IconButton>
-                </div>
+                {readOnly ? null : (
+                  <div className="flex gap-2">
+                    <IconButton label="Kemaskini" onClick={() => setEditing(row)}>
+                      <Edit3 size={17} />
+                    </IconButton>
+                    <IconButton label="Padam" onClick={() => remove(row.id)} tone="danger">
+                      <Trash2 size={17} />
+                    </IconButton>
+                  </div>
+                )}
               </div>
 
               <div className="mt-4 flex flex-wrap gap-2">
@@ -307,18 +313,18 @@ export function TrackerView({
         <EmptyState text={onlyMissingPhotos ? 'Semua log dah ada gambar. Bagus!' : 'Belum ada log makan.'} />
       ) : null}
 
-      {pickingMenu ? <MenuPicker rows={menuRows} onPick={pickMenu} onClose={() => setPickingMenu(false)} /> : null}
+      {!readOnly && pickingMenu ? <MenuPicker rows={menuRows} onPick={pickMenu} onClose={() => setPickingMenu(false)} /> : null}
 
       {showCalendar ? (
         <TrackerWeekCalendar
           birthDate={babyProfile?.birth_date ?? ''}
           rows={rows}
           onClose={() => setShowCalendar(false)}
-          onAddForDate={pickCalendarDate}
+          onAddForDate={readOnly ? undefined : pickCalendarDate}
         />
       ) : null}
 
-      {activeRecord ? (
+      {!readOnly && activeRecord ? (
         <FormModal
           title={editing ? 'Kemaskini Log' : 'Tambah Log'}
           fields={[

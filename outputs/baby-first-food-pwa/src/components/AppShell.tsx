@@ -27,6 +27,7 @@ export function AppShell({
   syncState,
   syncMessage,
   data,
+  viewOnly,
   children,
 }: {
   activeTab: TabKey;
@@ -34,11 +35,13 @@ export function AppShell({
   syncState: SyncState;
   syncMessage?: string;
   data?: AppData;
+  viewOnly?: boolean;
   children: ReactNode;
 }) {
   const babyName = data?.BabyProfile[0]?.baby_name?.trim();
   const babyBirthDate = data?.BabyProfile[0]?.birth_date?.trim();
   const babyAge = babyBirthDate ? calculateAge(babyBirthDate) : '';
+  const visibleNavItems = viewOnly ? navItems.filter((item) => item.key === 'dashboard' || item.key === 'tracker' || item.key === 'gallery') : navItems;
 
   return (
     <div className="min-h-dvh bg-cream text-cocoa">
@@ -54,6 +57,7 @@ export function AppShell({
                 {babyName || 'Planner Bayi'}
                 {babyAge ? <span className="font-semibold text-cocoa/70"> ({babyAge})</span> : null}
               </h1>
+              {/* {viewOnly ? <p className="mt-0.5 text-[11px] font-bold text-sageDeep">👀 Mod tengok sahaja</p> : null} */}
             </div>
           </div>
           <div className="text-right">
@@ -66,8 +70,8 @@ export function AppShell({
       <main className="mx-auto max-w-md px-5 pb-28 pt-5">{children}</main>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-white/70 bg-white/92 px-3 pb-[calc(env(safe-area-inset-bottom)+10px)] pt-2 shadow-[0_-12px_36px_rgba(111,86,72,0.12)] backdrop-blur">
-        <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
-          {navItems.map((item) => {
+        <div className={`mx-auto grid max-w-md gap-1 ${visibleNavItems.length === 3 ? 'grid-cols-3' : 'grid-cols-5'}`}>
+          {visibleNavItems.map((item) => {
             const Icon = item.icon;
             const active = activeTab === item.key;
             return (

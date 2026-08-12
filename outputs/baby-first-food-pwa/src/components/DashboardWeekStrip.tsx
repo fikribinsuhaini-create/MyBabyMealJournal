@@ -22,7 +22,7 @@ export function DashboardWeekStrip({
   onOpenFullCalendar,
 }: {
   rows: FoodTracker[];
-  onAddForDate: (iso: string) => void;
+  onAddForDate?: (iso: string) => void;
   onOpenFullCalendar?: () => void;
 }) {
   const today = useMemo(() => todayIso(), []);
@@ -87,14 +87,16 @@ export function DashboardWeekStrip({
       <div className="mt-3 space-y-2 rounded-[18px] bg-cream px-3 py-3">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm font-bold text-cocoa">{formatDisplayDate(selectedDate)}</p>
-          <button
-            type="button"
-            onClick={() => onAddForDate(selectedDate)}
-            className="flex items-center gap-1 rounded-full bg-peach px-3 py-1.5 text-xs font-bold text-white shadow-sm active:scale-95"
-          >
-            <Plus size={14} />
-            Tambah log
-          </button>
+          {onAddForDate ? (
+            <button
+              type="button"
+              onClick={() => onAddForDate(selectedDate)}
+              className="flex items-center gap-1 rounded-full bg-peach px-3 py-1.5 text-xs font-bold text-white shadow-sm active:scale-95"
+            >
+              <Plus size={14} />
+              Tambah log
+            </button>
+          ) : null}
         </div>
 
         {selectedEntries.length ? (
